@@ -114,6 +114,10 @@ public final class WandUpgrades {
         return isEnabled(wand, ModItems.ITEM_UPGRADE_AUTO_SMELT);
     }
 
+    public static boolean hasFlight(ItemStack wand) {
+        return isEnabled(wand, ModItems.ITEM_UPGRADE_FLIGHT);
+    }
+
     /**
      * @return the fortune level the fortune component grants, from the configuration
      */

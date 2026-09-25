@@ -121,7 +121,7 @@ public class GuiWand extends GuiScreen {
      * registry events ran.
      */
     private static Item[] allUpgrades() {
-        return new Item[]{ModItems.ITEM_UPGRADE_FORTUNE, ModItems.ITEM_UPGRADE_AUTO_SMELT};
+        return new Item[]{ModItems.ITEM_UPGRADE_FORTUNE, ModItems.ITEM_UPGRADE_AUTO_SMELT, ModItems.ITEM_UPGRADE_FLIGHT};
     }
 
     private String getButtonLabel(WandOption option) {

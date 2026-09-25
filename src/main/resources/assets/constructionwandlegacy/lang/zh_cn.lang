@@ -127,8 +127,10 @@ constructionwandlegacy.command.limit.unlimited=无限制
 
 item.constructionwandlegacy.upgrade_fortune.name=时运升级
 item.constructionwandlegacy.upgrade_auto_smelt.name=自动熔炼升级
+item.constructionwandlegacy.upgrade_flight.name=飞行升级
 constructionwandlegacy.upgrade.upgrade_fortune.desc=装在手杖上，挖掘时按配置的时运等级结算掉落与经验（默认 3 级）
 constructionwandlegacy.upgrade.upgrade_auto_smelt.desc=装在手杖上，挖到的掉落物直接按熔炉配方烧炼
+constructionwandlegacy.upgrade.upgrade_flight.desc=装在手杖上，手持手杖时可进行创造飞行
 constructionwandlegacy.upgrade.hint=与手杖一起合成即可装上；卸下见手杖设置界面
 constructionwandlegacy.upgrade.toggle_hint=§7左键：启用/禁用；Shift+左键：取下该升级
 constructionwandlegacy.upgrade.state=状态: %s
@@ -140,6 +142,7 @@ constructionwandlegacy.upgrade.upgrade_fortune.off=无
 constructionwandlegacy.upgrade.upgrade_auto_smelt.label=熔炼升级 
 constructionwandlegacy.upgrade.upgrade_auto_smelt.on=已装
 constructionwandlegacy.upgrade.upgrade_auto_smelt.off=未装
+constructionwandlegacy.upgrade.upgrade_flight.label=飞行升级 
 constructionwandlegacy.tooltip.upgrades=升级组件:
 
 key.categories.constructionwandlegacy=建筑手杖

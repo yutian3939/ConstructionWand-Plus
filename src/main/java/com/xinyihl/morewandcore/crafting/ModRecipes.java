@@ -54,6 +54,13 @@ public final class ModRecipes {
                 " B ",
                 'B', Items.BLAZE_POWDER,
                 'F', Blocks.FURNACE);
+
+        register(event, ModItems.UPGRADE_FLIGHT, new ItemStack(ModItems.ITEM_UPGRADE_FLIGHT),
+                " F ",
+                "FDF",
+                " F ",
+                'F', Items.FEATHER,
+                'D', Items.DIAMOND);
     }
 
     private static void register(RegistryEvent.Register<IRecipe> event, String name, ItemStack output, Object... recipe) {

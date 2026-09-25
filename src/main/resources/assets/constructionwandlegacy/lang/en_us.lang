@@ -127,8 +127,10 @@ constructionwandlegacy.command.limit.unlimited=unlimited
 
 item.constructionwandlegacy.upgrade_fortune.name=Fortune Upgrade
 item.constructionwandlegacy.upgrade_auto_smelt.name=Auto Smelting Upgrade
+item.constructionwandlegacy.upgrade_flight.name=Flight Upgrade
 constructionwandlegacy.upgrade.upgrade_fortune.desc=Installed on a wand, the drops and experience are rolled with the configured fortune level (3 by default)
 constructionwandlegacy.upgrade.upgrade_auto_smelt.desc=Installed on a wand, the dug drops are smelted with their furnace recipe
+constructionwandlegacy.upgrade.upgrade_flight.desc=Installed on a wand, the player can fly (creative flight) while holding the wand
 constructionwandlegacy.upgrade.hint=Craft it together with a wand to install it; take it off from the wand screen
 constructionwandlegacy.upgrade.toggle_hint=§7Click: enable/disable; Shift-click: take this upgrade off
 constructionwandlegacy.upgrade.state=State: %s
@@ -140,6 +142,7 @@ constructionwandlegacy.upgrade.upgrade_fortune.off=none
 constructionwandlegacy.upgrade.upgrade_auto_smelt.label=Smelting upgrade 
 constructionwandlegacy.upgrade.upgrade_auto_smelt.on=installed
 constructionwandlegacy.upgrade.upgrade_auto_smelt.off=not installed
+constructionwandlegacy.upgrade.upgrade_flight.label=Flight upgrade 
 constructionwandlegacy.tooltip.upgrades=Upgrades:
 
 key.categories.constructionwandlegacy=Construction Wand

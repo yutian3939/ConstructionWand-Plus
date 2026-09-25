@@ -23,6 +23,7 @@ public final class ClientItemEvents {
         registerModel(ModItems.ITEM_CORE_STORAGE);
         registerModel(ModItems.ITEM_UPGRADE_FORTUNE);
         registerModel(ModItems.ITEM_UPGRADE_AUTO_SMELT);
+        registerModel(ModItems.ITEM_UPGRADE_FLIGHT);
     }
 
     private static void registerModel(Item item) {
