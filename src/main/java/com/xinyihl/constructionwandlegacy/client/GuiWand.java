@@ -18,6 +18,7 @@ import com.xinyihl.constructionwandlegacy.network.PacketBoundContainer;
 import com.xinyihl.constructionwandlegacy.network.PacketExtraOption;
 import com.xinyihl.constructionwandlegacy.network.PacketRemoveCore;
 import com.xinyihl.constructionwandlegacy.network.PacketRemoveUpgrade;
+import com.xinyihl.constructionwandlegacy.network.PacketToggleUpgrade;
 import com.xinyihl.constructionwandlegacy.network.PacketWandLimit;
 import com.xinyihl.constructionwandlegacy.network.PacketWandOption;
 import com.xinyihl.constructionwandlegacy.wand.upgrade.IWandCore;
@@ -363,6 +364,20 @@ public class GuiWand extends GuiScreen {
         ModMessages.sendToServer(new PacketRemoveUpgrade(target, upgrade.getRegistryName()));
     }
 
+    /**
+     * Enables or disables an installed upgrade in place. A disabled component stays on the wand but
+     * its effect is off until it is enabled again; taking it off still needs the modifier.
+     */
+    private void toggleUpgrade(Item upgrade) {
+        boolean enabled = WandUpgrades.isEnabled(wand, upgrade);
+        if (!WandUpgrades.setDisabled(wand, upgrade, enabled)) {
+            return;
+        }
+        state = WandDataCodec.read(wand);
+        initGui();
+        ModMessages.sendToServer(new PacketToggleUpgrade(target, upgrade.getRegistryName(), !enabled));
+    }
+
     private int configuredLimit() {
         ItemWand item = wand.getItem() instanceof ItemWand ? (ItemWand) wand.getItem() : null;
         return item == null ? 1 : Math.max(1, ConfigRuntime.getSnapshot().getPlacementLimit(item.getTier()));
@@ -463,8 +478,10 @@ public class GuiWand extends GuiScreen {
             if (button instanceof UpgradeButton) {
                 Item upgrade = ((UpgradeButton) button).upgrade;
                 ResourceLocation id = upgrade.getRegistryName();
-                List<String> tooltip = new ArrayList<>(2);
+                List<String> tooltip = new ArrayList<>(3);
                 tooltip.add(I18n.format(Tags.MOD_ID + ".upgrade." + (id == null ? "unknown" : id.getPath()) + ".desc"));
+                String stateKey = WandUpgrades.isEnabled(wand, upgrade) ? "enabled" : "disabled";
+                tooltip.add(I18n.format(Tags.MOD_ID + ".upgrade.state", I18n.format(Tags.MOD_ID + ".upgrade.state." + stateKey)));
                 tooltip.add(I18n.format(Tags.MOD_ID + ".upgrade.toggle_hint"));
                 drawHoveringText(tooltip, mouseX, mouseY);
                 return;
@@ -509,9 +526,11 @@ public class GuiWand extends GuiScreen {
         }
 
         if (button instanceof UpgradeButton) {
-            // Like the core buttons: only the modifier takes the component off.
+            // A plain click enables or disables the component, the modifier takes it off.
             if (isShiftKeyDown()) {
                 removeUpgrade(((UpgradeButton) button).upgrade);
+            } else {
+                toggleUpgrade(((UpgradeButton) button).upgrade);
             }
             return;
         }
@@ -783,6 +802,10 @@ public class GuiWand extends GuiScreen {
             this.hovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
             drawRect(this.x, this.y, this.x + this.width, this.y + this.height, this.hovered && this.enabled ? 0x66FFFFFF : 0x33000000);
             drawItemIcon(this.upgrade, this.x + 1, this.y + 1);
+            if (WandUpgrades.isDisabled(wand, this.upgrade)) {
+                // A disabled component is dimmed so its state is visible at a glance.
+                drawRect(this.x, this.y, this.x + this.width, this.y + this.height, 0x99000000);
+            }
         }
     }
 

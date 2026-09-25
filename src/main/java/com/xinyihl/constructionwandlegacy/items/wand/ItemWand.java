@@ -114,7 +114,7 @@ public abstract class ItemWand extends Item {
             return false;
         }
         if (result == BoundContainerSourceFactory.BindResult.FULL) {
-            player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.binding_full", BoundContainerSourceFactory.MAX_CONTAINERS), true);
+            player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.binding_full", BoundContainerSourceFactory.getMaxContainers()), true);
             return true;
         }
         player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.container_bound", BoundContainerSourceFactory.readBindings(stack).size()), true);

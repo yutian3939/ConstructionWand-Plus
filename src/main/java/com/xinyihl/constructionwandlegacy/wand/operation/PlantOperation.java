@@ -151,7 +151,7 @@ public final class PlantOperation implements WandOperation {
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
             if (!world.isBlockModifiable(player, pos)) {
                 return RollbackResult.notRestored("crop is not restorable");
             }

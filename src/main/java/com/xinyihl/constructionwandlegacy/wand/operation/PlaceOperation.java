@@ -183,7 +183,7 @@ public final class PlaceOperation implements WandOperation {
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
             if (!world.isBlockModifiable(player, pos)) {
                 return RollbackResult.notRestored("placed block is not restorable");
             }

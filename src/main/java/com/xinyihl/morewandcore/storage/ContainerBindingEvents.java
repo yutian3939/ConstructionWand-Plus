@@ -64,7 +64,7 @@ public final class ContainerBindingEvents {
             return;
         }
         if (result == BoundContainerSourceFactory.BindResult.FULL) {
-            player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.binding_full", BoundContainerSourceFactory.MAX_CONTAINERS), true);
+            player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.binding_full", BoundContainerSourceFactory.getMaxContainers()), true);
             return;
         }
         int bound = BoundContainerSourceFactory.readBindings(wand).size();

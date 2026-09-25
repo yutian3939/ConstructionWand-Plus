@@ -85,6 +85,20 @@ public final class FluidRemovalOperation implements WandOperation {
         }
     }
 
+    /**
+     * Clears a fluid that flowed back into the removed fluid's position after it was taken away, so
+     * the undo can put the fluid back instead of being refused.
+     *
+     * @return whether the position is now free for the fluid to be put back
+     */
+    private static boolean clearIntrudingFluid(World world, BlockPos pos) {
+        IBlockState occupying = world.getBlockState(pos);
+        if (!WandUtil.isFluid(occupying)) {
+            return false;
+        }
+        return world.setBlockToAir(pos);
+    }
+
     private static final class FluidChange implements AppliedChange {
         private final BlockPos pos;
         private final IBlockState fluid;
@@ -108,7 +122,7 @@ public final class FluidRemovalOperation implements WandOperation {
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
             if (!restorable) {
                 // The digging core counts the cleared fluid as part of the harvest, so its undo gives
                 // the blocks back but not the fluid that ran into the hole.
@@ -124,7 +138,7 @@ public final class FluidRemovalOperation implements WandOperation {
             if (world.getBlockState(pos).equals(fluid)) {
                 return RollbackResult.restored();
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("fluid position is occupied");
             }
             return world.setBlockState(pos, fluid, 3) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected fluid restore");

@@ -5,12 +5,14 @@ import com.xinyihl.constructionwandlegacy.material.SaturatedAmounts;
 import com.xinyihl.constructionwandlegacy.material.source.BoundContainerSourceFactory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidTankProperties;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
@@ -87,15 +89,86 @@ public final class ContainerBinding {
      * How much of that fluid all bound containers can still take together.
      */
     public static int fluidCapacity(ItemStack wand, FluidStack fluid) {
+        if (fluid == null || fluid.getFluid() == null) {
+            return 0;
+        }
         int total = 0;
         for (IFluidHandler handler : fluidHandlers(wand)) {
+            total = SaturatedAmounts.add(total, capacityFor(handler, fluid));
+        }
+        return total;
+    }
+
+    /**
+     * How much of {@code fluid} one handler can still take.
+     * <p>
+     * The previous probe ({@code handler.fill(fluid.copy(), false)}) is capped by the amount passed
+     * in, which is one bucket for a source block, so a tank with a lot of free space still reported
+     * only one bucket and the digging core cleared one water block at a time. Reading the tank
+     * properties reports the real free space instead.
+     */
+    private static int capacityFor(IFluidHandler handler, FluidStack fluid) {
+        IFluidTankProperties[] tanks;
+        try {
+            tanks = handler.getTankProperties();
+        } catch (RuntimeException exception) {
+            tanks = null;
+        }
+        if (tanks == null || tanks.length == 0) {
+            // No readable tank properties: fall back to a probe with a very large amount.
             try {
-                total = SaturatedAmounts.add(total, Math.max(0, handler.fill(fluid.copy(), false)));
+                return Math.max(0, handler.fill(new FluidStack(fluid.getFluid(), Integer.MAX_VALUE), false));
             } catch (RuntimeException exception) {
-                // A container that cannot be asked is treated as one that cannot take the fluid.
+                return 0;
+            }
+        }
+        int total = 0;
+        for (IFluidTankProperties tank : tanks) {
+            try {
+                FluidStack contents = tank.getContents();
+                int free;
+                if (contents == null || contents.amount <= 0) {
+                    free = tank.getCapacity();
+                } else if (contents.isFluidEqual(fluid)) {
+                    free = Math.max(0, tank.getCapacity() - contents.amount);
+                } else {
+                    free = 0;
+                }
+                total = SaturatedAmounts.add(total, free);
+            } catch (RuntimeException exception) {
+                // A tank that cannot be asked is skipped.
             }
         }
         return total;
+    }
+
+    /**
+     * How much of {@code fluid} all bound containers currently hold together.
+     */
+    public static int countStoredFluid(ItemStack wand, FluidStack fluid) {
+        if (fluid == null || fluid.getFluid() == null) {
+            return 0;
+        }
+        int total = 0;
+        for (IFluidHandler handler : fluidHandlers(wand)) {
+            total = SaturatedAmounts.add(total, countFluid(handler, fluid));
+        }
+        return total;
+    }
+
+    private static int countFluid(IFluidHandler handler, FluidStack fluid) {
+        try {
+            int total = 0;
+            for (IFluidTankProperties tank : handler.getTankProperties()) {
+                FluidStack contents = tank.getContents();
+                if (contents != null && contents.isFluidEqual(fluid)) {
+                    total = SaturatedAmounts.add(total, contents.amount);
+                }
+            }
+            return total;
+        } catch (RuntimeException exception) {
+            return 0;
+        }
     }
 
     /**
@@ -166,7 +239,7 @@ public final class ContainerBinding {
     private static List<IFluidHandler> fluidHandlers(ItemStack wand) {
         List<IFluidHandler> handlers = new ArrayList<>();
         for (BoundContainerSourceFactory.Bound bound : BoundContainerSourceFactory.readBindings(wand)) {
-            IFluidHandler handler = capabilityAt(bound, CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY);
+            IFluidHandler handler = fluidCapabilityAt(bound);
             if (handler != null) {
                 handlers.add(handler);
             }
@@ -176,16 +249,66 @@ public final class ContainerBinding {
 
     @Nullable
     private static <T> T capabilityAt(BoundContainerSourceFactory.Bound bound, Capability<T> capability) {
+        TileEntity tile = tileAt(bound);
+        if (tile == null) {
+            return null;
+        }
+        try {
+            return tile.getCapability(capability, null);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static TileEntity tileAt(BoundContainerSourceFactory.Bound bound) {
         try {
             World world = DimensionManager.getWorld(bound.getDimension());
             if (world == null || world.isRemote || !world.isBlockLoaded(bound.getPos())) {
                 return null;
             }
             TileEntity tile = world.getTileEntity(bound.getPos());
-            if (tile == null || tile.isInvalid()) {
-                return null;
+            return tile == null || tile.isInvalid() ? null : tile;
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Returns a fluid handler for one bound container.
+     * <p>
+     * Mekanism's {@code FluidHandlerWrapper} refuses to fill or drain when the capability was asked
+     * for with a {@code null} side, and its {@code DOWN} side blocks draining while the tank is
+     * active. A concrete side is therefore preferred over the generic one: {@code UP} works for plain
+     * fluid tanks and lets a Mekanism tank both fill and drain, so it is tried first, then the other
+     * sides, and only then the {@code null} side for containers that only expose one there.
+     */
+    @Nullable
+    private static IFluidHandler fluidCapabilityAt(BoundContainerSourceFactory.Bound bound) {
+        TileEntity tile = tileAt(bound);
+        if (tile == null) {
+            return null;
+        }
+        IFluidHandler handler = fluidHandlerAt(tile, EnumFacing.UP);
+        if (handler != null) {
+            return handler;
+        }
+        for (EnumFacing facing : EnumFacing.values()) {
+            if (facing == EnumFacing.UP) {
+                continue;
             }
-            return tile.getCapability(capability, null);
+            handler = fluidHandlerAt(tile, facing);
+            if (handler != null) {
+                return handler;
+            }
+        }
+        return fluidHandlerAt(tile, null);
+    }
+
+    @Nullable
+    private static IFluidHandler fluidHandlerAt(TileEntity tile, @Nullable EnumFacing side) {
+        try {
+            return tile.getCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, side);
         } catch (RuntimeException exception) {
             return null;
         }

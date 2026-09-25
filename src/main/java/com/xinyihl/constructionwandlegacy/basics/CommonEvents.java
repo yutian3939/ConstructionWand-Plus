@@ -25,5 +25,6 @@ public class CommonEvents {
 
     public void onServerStarting(FMLServerStartingEvent event) {
         ConfigRuntime.reload();
+        event.registerServerCommand(new CommandWand());
     }
 }

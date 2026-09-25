@@ -168,6 +168,20 @@ public final class StoredFluidOperation implements WandOperation {
         }
     }
 
+    /**
+     * Clears a fluid that flowed back into the removed fluid's position after it was taken away, so
+     * the undo can put the stored source block back instead of being refused.
+     *
+     * @return whether the position is now free for the fluid to be put back
+     */
+    private static boolean clearIntrudingFluid(World world, BlockPos pos) {
+        IBlockState occupying = world.getBlockState(pos);
+        if (!WandUtil.isFluid(occupying)) {
+            return false;
+        }
+        return world.setBlockToAir(pos);
+    }
+
     private static final class StoredFluidChange implements AppliedChange {
         private final BlockPos pos;
         private final IBlockState fluid;
@@ -208,14 +222,42 @@ public final class StoredFluidOperation implements WandOperation {
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
+        public boolean canRestore(EntityPlayer player) {
+            return stored == null || storedFluid(player) >= stored.amount;
+        }
+
+        @Override
+        public void reportMissing(EntityPlayer player) {
+            if (stored != null && storedFluid(player) < stored.amount) {
+                UndoFeedback.reportFluid(player, stored);
+            }
+        }
+
+        private int storedFluid(@Nullable EntityPlayer player) {
+            if (materialCore == null || wand == null) {
+                return 0;
+            }
+            try {
+                return Math.max(0, materialCore.countStoredFluid(player, wand, stored));
+            } catch (RuntimeException exception) {
+                return 0;
+            }
+        }
+
+        @Override
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
             if (!reclaim(player)) {
-                // Refuse the whole undo, the history entry is kept so it can be retried once the fluid
-                // is back in the store.
-                if (player != null && stored != null) {
-                    UndoFeedback.reportFluid(player, stored);
+                if (!force) {
+                    // Refuse the whole undo, the history entry is kept so it can be retried once the
+                    // fluid is back in the store.
+                    if (player != null && stored != null) {
+                        UndoFeedback.reportFluid(player, stored);
+                    }
+                    return RollbackResult.notRestored("stored fluid is not available");
                 }
-                return RollbackResult.notRestored("stored fluid is not available");
+                // Forced: the stored fluid is not available, so this source block is simply not put
+                // back. The missing part is skipped instead of being duplicated.
+                return RollbackResult.restored();
             }
             if (stored == null) {
                 // Flowing fluid is not stored and therefore not put back; its source brings it back.
@@ -253,7 +295,7 @@ public final class StoredFluidOperation implements WandOperation {
             if (world.getBlockState(pos).equals(fluid)) {
                 return RollbackResult.alreadyRestored();
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("fluid position is occupied");
             }
             return world.setBlockState(pos, fluid, 3) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected fluid restore");

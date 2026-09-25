@@ -22,7 +22,30 @@ public interface WandOperation {
 
         RollbackResult rollback(World world);
 
-        RollbackResult restore(World world, EntityPlayer player);
+        /**
+         * Whether the change can be restored right now, without touching the world or taking anything
+         * back. The default is always true; changes that take harvested items or stored fluid back
+         * override it so a non-forced undo is refused as a whole instead of being partially applied.
+         */
+        default boolean canRestore(EntityPlayer player) {
+            return true;
+        }
+
+        /**
+         * Reports what this change is missing to the player, used when a non-forced undo is refused
+         * as a whole. The default does nothing.
+         */
+        default void reportMissing(EntityPlayer player) {
+        }
+
+        /**
+         * Restores the change as part of an undo.
+         *
+         * @param force when true the change restores what it can without taking the harvested items
+         *              or stored fluid back, so a second undo press after a shortage restores the
+         *              world instead of being refused.
+         */
+        RollbackResult restore(World world, EntityPlayer player, boolean force);
     }
 
     final class RollbackResult {

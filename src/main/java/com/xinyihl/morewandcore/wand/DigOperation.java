@@ -2,6 +2,7 @@ package com.xinyihl.morewandcore.wand;
 
 import com.xinyihl.constructionwandlegacy.ConstructionWandLegacy;
 import com.xinyihl.constructionwandlegacy.basics.WandUtil;
+import com.xinyihl.constructionwandlegacy.config.ModConfig;
 import com.xinyihl.constructionwandlegacy.wand.WandContext;
 import com.xinyihl.constructionwandlegacy.wand.WandOperation;
 import com.xinyihl.constructionwandlegacy.wand.WandPlan;
@@ -64,8 +65,9 @@ public final class DigOperation implements WandOperation {
         }
         // Unlike the destruction core, which removes whatever it is pointed at, the digging core
         // refuses blocks that no player tool can mine: a bedrock (or barrier) item would be
-        // placeable and could never be removed again.
-        if (WandUtil.isBlockUnbreakable(world, pos)) {
+        // placeable and could never be removed again. The configuration can lift this so bedrock
+        // can be dug.
+        if (WandUtil.isBlockUnbreakable(world, pos) && !ModConfig.digging.breakUnbreakable) {
             return null;
         }
         return new DigOperation(pos, world.getBlockState(pos), silkTouch, destination, materialCore, wand);
@@ -250,6 +252,17 @@ public final class DigOperation implements WandOperation {
             return drops;
         }
         Block blockObject = block.getBlock();
+        if (WandUtil.isBlockUnbreakable(world, pos)) {
+            // Unbreakable blocks have no drop table; hand out the block itself when configured to,
+            // so a dug bedrock is not simply lost.
+            if (ModConfig.digging.dropUnbreakable) {
+                ItemStack drop = SilkTouchDrops.drop(blockObject, block);
+                if (!drop.isEmpty()) {
+                    drops.add(drop);
+                }
+            }
+            return drops;
+        }
         if (silkTouch) {
             // Silk touch keeps the block itself, so fortune does not apply, exactly like vanilla.
             if (!blockObject.canSilkHarvest(world, pos, block, player)) {
@@ -332,6 +345,20 @@ public final class DigOperation implements WandOperation {
         return experience;
     }
 
+    /**
+     * Clears a fluid that flowed into a dug position after the block was removed, so the undo can put
+     * the block back instead of being refused. Anything solid still blocks the undo.
+     *
+     * @return whether the position is now free for the block to be placed
+     */
+    private static boolean clearIntrudingFluid(World world, BlockPos pos) {
+        IBlockState occupying = world.getBlockState(pos);
+        if (!WandUtil.isFluid(occupying)) {
+            return false;
+        }
+        return world.setBlockToAir(pos);
+    }
+
     private static final class DigChange implements AppliedChange {
         private final BlockPos pos;
         private final IBlockState block;
@@ -360,23 +387,22 @@ public final class DigOperation implements WandOperation {
          * flag keeps the removal idempotent so a retried recovery cannot consume the same items
          * twice.
          *
-         * @return the missing amount, or {@code null} when the items were taken back
+         * @return whether the items were taken back
          */
-        @Nullable
-        private ItemStack takeDrops(@Nullable EntityPlayer player) {
+        private boolean takeDrops(@Nullable EntityPlayer player) {
             if (dropsReclaimed) {
-                return null;
+                return true;
             }
             if (!delivered.isEmpty()) {
                 ItemStack missing = DropReclaim.reclaim(player, materialCore, wand, destination, delivered);
                 if (missing != null) {
-                    return missing;
+                    return false;
                 }
             }
             dropsReclaimed = true;
             // The experience was handed out together with the drops, so undoing takes it back too.
             ExperienceHelper.reclaim(player, experience);
-            return null;
+            return true;
         }
 
         @Override
@@ -398,23 +424,39 @@ public final class DigOperation implements WandOperation {
             if (WandUtil.matchesPlannedState(world.getBlockState(pos), block)) {
                 return RollbackResult.restored();
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("dug position is occupied");
             }
             return world.setBlockState(pos, block, 3) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected dig rollback");
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
-            ItemStack missing = takeDrops(player);
+        public boolean canRestore(EntityPlayer player) {
+            return DropReclaim.missingReclaim(player, materialCore, wand, delivered) == null;
+        }
+
+        @Override
+        public void reportMissing(EntityPlayer player) {
+            ItemStack missing = DropReclaim.missingReclaim(player, materialCore, wand, delivered);
             if (missing != null) {
-                // Refuse the whole undo: the blocks stay broken and the history entry is kept, so
-                // the player can retry once the items are available again. Every change of this
-                // attempt reports here, UndoFeedback merges them into one chat line.
-                if (player != null) {
-                    UndoFeedback.report(player, missing);
+                UndoFeedback.report(player, missing);
+            }
+        }
+
+        @Override
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
+            if (!takeDrops(player)) {
+                if (!force) {
+                    // Refuse the whole undo: the blocks stay broken and the history entry is kept, so
+                    // the player can retry once the items are available again. Every change of this
+                    // attempt reports here, UndoFeedback merges them into one chat line.
+                    reportMissing(player);
+                    return RollbackResult.notRestored("not enough items to undo the digging operation");
                 }
-                return RollbackResult.notRestored("not enough items to undo the digging operation");
+                // Forced: the harvested drops are not available, so this block is simply not put
+                // back. Putting it back without the drops would duplicate what the player already
+                // used up.
+                return RollbackResult.restored();
             }
             if (WandUtil.matchesPlannedState(world.getBlockState(pos), block)) {
                 return RollbackResult.alreadyRestored();
@@ -422,7 +464,7 @@ public final class DigOperation implements WandOperation {
             if (!world.isBlockModifiable(player, pos)) {
                 return RollbackResult.notRestored("dug block is not restorable");
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("dug position is occupied");
             }
             return WandUtil.placeBlock(world, player, block, pos) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected dig restore");

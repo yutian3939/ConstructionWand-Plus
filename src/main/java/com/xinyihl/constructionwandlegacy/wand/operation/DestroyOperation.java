@@ -68,6 +68,20 @@ public final class DestroyOperation implements WandOperation {
         }
     }
 
+    /**
+     * Clears a fluid that flowed into a destroyed position after the block was removed, so the undo
+     * can put the block back instead of being refused. Anything solid still blocks the undo.
+     *
+     * @return whether the position is now free for the block to be placed
+     */
+    private static boolean clearIntrudingFluid(World world, BlockPos pos) {
+        IBlockState occupying = world.getBlockState(pos);
+        if (!WandUtil.isFluid(occupying)) {
+            return false;
+        }
+        return world.setBlockToAir(pos);
+    }
+
     private static final class DestroyChange implements AppliedChange {
         private final BlockPos pos;
         private final IBlockState block;
@@ -87,18 +101,18 @@ public final class DestroyOperation implements WandOperation {
             if (WandUtil.matchesPlannedState(world.getBlockState(pos), block)) {
                 return RollbackResult.restored();
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("destroyed position is occupied");
             }
             return world.setBlockState(pos, block, 3) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected destruction rollback");
         }
 
         @Override
-        public RollbackResult restore(World world, EntityPlayer player) {
+        public RollbackResult restore(World world, EntityPlayer player, boolean force) {
             if (WandUtil.matchesPlannedState(world.getBlockState(pos), block)) {
                 return RollbackResult.restored();
             }
-            if (!world.isAirBlock(pos)) {
+            if (!world.isAirBlock(pos) && !clearIntrudingFluid(world, pos)) {
                 return RollbackResult.notRestored("destroyed position is occupied");
             }
             return WandUtil.placeBlock(world, player, block, pos) ? RollbackResult.restored() : RollbackResult.notRestored("world rejected destruction restore");

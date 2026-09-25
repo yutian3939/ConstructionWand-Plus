@@ -101,6 +101,57 @@ public final class DropReclaim {
     }
 
     /**
+     * The first stack of the delivered set that is not currently available in the player inventory and
+     * the material core, or {@code null} when everything is there. Does not take anything, so it can be
+     * used to pre-check an undo and to report what a refused undo is missing.
+     */
+    @Nullable
+    public static ItemStack missingReclaim(@Nullable EntityPlayer player, @Nullable IWandCore materialCore, @Nullable ItemStack wand, List<ItemStack> delivered) {
+        List<ItemStack> required = nonEmptyCopies(delivered);
+        if (required.isEmpty()) {
+            return null;
+        }
+        boolean hasMaterialStore = materialCore != null && wand != null;
+        if (player == null && !hasMaterialStore) {
+            return required.get(0);
+        }
+
+        Map<MaterialKey, Integer> needed = new LinkedHashMap<>();
+        Map<MaterialKey, ItemStack> samples = new HashMap<>();
+        for (ItemStack stack : required) {
+            MaterialKey key = MaterialKey.of(stack);
+            Integer current = needed.get(key);
+            needed.put(key, current == null ? stack.getCount() : current + stack.getCount());
+            if (!samples.containsKey(key)) {
+                samples.put(key, stack);
+            }
+        }
+
+        Map<MaterialKey, Integer> available = new HashMap<>();
+        if (player != null) {
+            countInventory(available, player);
+        }
+        if (hasMaterialStore) {
+            for (MaterialKey key : needed.keySet()) {
+                int stored = Math.max(0, countStored(materialCore, player, wand, samples.get(key)));
+                if (stored > 0) {
+                    Integer current = available.get(key);
+                    available.put(key, current == null ? stored : current + stored);
+                }
+            }
+        }
+
+        for (Map.Entry<MaterialKey, Integer> entry : needed.entrySet()) {
+            Integer counted = available.get(entry.getKey());
+            int amount = counted == null ? 0 : counted;
+            if (amount < entry.getValue()) {
+                return entry.getKey().createStack(entry.getValue() - amount);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Counts how many items equivalent to {@code template} the player currently carries.
      */
     public static int countInInventory(@Nullable EntityPlayer player, ItemStack template) {

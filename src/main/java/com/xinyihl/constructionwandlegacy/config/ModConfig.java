@@ -17,6 +17,12 @@ public final class ModConfig {
     @Config.Name("wandUpgrades")
     public static final WandUpgrades wandUpgrades = new WandUpgrades();
 
+    @Config.Name("storage")
+    public static final Storage storage = new Storage();
+
+    @Config.Name("digging")
+    public static final Digging digging = new Digging();
+
     @Config.Name("performance")
     public static final Performance performance = new Performance();
 
@@ -72,6 +78,20 @@ public final class ModConfig {
         @Config.RangeInt(min = 1, max = 10)
         @Config.Comment("Fortune level the fortune upgrade component gives the digging core")
         public int fortuneLevel = 3;
+    }
+
+    public static final class Storage {
+        @Config.RangeInt(min = -1, max = 4096)
+        @Config.Comment("Max containers one wand may bind for the storage core. Set -1 for unlimited.")
+        public int maxBoundContainers = 8;
+    }
+
+    public static final class Digging {
+        @Config.Comment("Whether the digging core may break unbreakable blocks (bedrock, barrier, ...).")
+        public boolean breakUnbreakable = false;
+
+        @Config.Comment("Whether broken unbreakable blocks are dropped. Only applies when breakUnbreakable is enabled.")
+        public boolean dropUnbreakable = false;
     }
 
     public static final class Performance {

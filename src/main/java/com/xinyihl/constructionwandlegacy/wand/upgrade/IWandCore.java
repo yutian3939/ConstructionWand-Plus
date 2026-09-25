@@ -85,4 +85,12 @@ public interface IWandCore extends IWandUpgrade {
     default int withdrawFluid(EntityPlayer player, ItemStack wand, FluidStack fluid, int amount) {
         return amount;
     }
+
+    /**
+     * How much of that fluid this material core currently holds. Used to pre-check an undo before
+     * anything is restored.
+     */
+    default int countStoredFluid(EntityPlayer player, ItemStack wand, FluidStack fluid) {
+        return 0;
+    }
 }

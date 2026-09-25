@@ -94,6 +94,11 @@ public class ItemCoreStorage extends Item implements IWandCore {
     }
 
     @Override
+    public int countStoredFluid(EntityPlayer player, ItemStack wand, FluidStack fluid) {
+        return fluid == null ? 0 : ContainerBinding.countStoredFluid(wand, fluid);
+    }
+
+    @Override
     @SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn) {
         tooltip.add(TextFormatting.GRAY + I18n.translateToLocal(Tags.MOD_ID + ".option.cores." + getRegistryName() + ".desc"));

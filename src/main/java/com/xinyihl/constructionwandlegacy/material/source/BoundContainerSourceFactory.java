@@ -2,6 +2,7 @@ package com.xinyihl.constructionwandlegacy.material.source;
 
 import com.xinyihl.constructionwandlegacy.basics.BoundBlockKey;
 import com.xinyihl.constructionwandlegacy.basics.option.WandDataCodec;
+import com.xinyihl.constructionwandlegacy.config.ModConfig;
 import com.xinyihl.constructionwandlegacy.material.*;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
@@ -35,10 +36,12 @@ import java.util.Map;
  */
 public final class BoundContainerSourceFactory implements MaterialSourceFactory {
     /**
-     * How many containers one wand can hold. The wand screen lists them below each other, so this also
-     * keeps the list from growing past the screen.
+     * How many containers one wand may bind. The configuration value, with -1 or 0 meaning unlimited.
      */
-    public static final int MAX_CONTAINERS = 8;
+    public static int getMaxContainers() {
+        int configured = ModConfig.storage.maxBoundContainers;
+        return configured <= 0 ? Integer.MAX_VALUE : configured;
+    }
 
     private static final String TAG_LIST = "bound_containers";
     private static final String TAG_ENTRY_POS = "pos";
@@ -144,7 +147,7 @@ public final class BoundContainerSourceFactory implements MaterialSourceFactory 
             bindings.set(existing, new Bound(pos, dimension, key));
             return writeBindings(wand, bindings) ? BindResult.UPDATED : BindResult.FAILED;
         }
-        if (bindings.size() >= MAX_CONTAINERS) {
+        if (bindings.size() >= getMaxContainers()) {
             return BindResult.FULL;
         }
         bindings.add(new Bound(pos, dimension, key));
@@ -201,7 +204,7 @@ public final class BoundContainerSourceFactory implements MaterialSourceFactory 
     private static List<Bound> readList(NBTTagCompound data) {
         List<Bound> bindings = new ArrayList<>();
         NBTTagList list = data.getTagList(TAG_LIST, Constants.NBT.TAG_COMPOUND);
-        for (int index = 0; index < list.tagCount() && bindings.size() < MAX_CONTAINERS; index++) {
+        for (int index = 0; index < list.tagCount() && bindings.size() < getMaxContainers(); index++) {
             NBTTagCompound entry = list.getCompoundTagAt(index);
             int[] position = entry.getIntArray(TAG_ENTRY_POS);
             if (position.length < 3 || !entry.hasKey(TAG_ENTRY_DIM)) {

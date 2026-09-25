@@ -54,12 +54,27 @@ public final class WandTransaction {
     /**
      * Recovers all entries in reverse order without exposing receipts or entry mutators.
      */
-    public RecoveryResult recover(World world, EntityPlayer player) {
+    public RecoveryResult recover(World world, EntityPlayer player, boolean force) {
+        if (!force) {
+            // Pre-check: refuse the whole undo before restoring anything when any change is missing
+            // items or fluid, so a shortage never leaves a partially restored transaction behind.
+            boolean missing = false;
+            for (Entry entry : entries) {
+                if (!entry.change.canRestore(player)) {
+                    entry.change.reportMissing(player);
+                    missing = true;
+                }
+            }
+            if (missing) {
+                return RecoveryResult.incomplete(false, false, WandOperation.RollbackResult.notRestored("missing items or fluid"));
+            }
+        }
+
         boolean changed = false;
         boolean complete = true;
         WandOperation.RollbackResult firstFailure = null;
         for (int index = entries.size() - 1; index >= 0; index--) {
-            RecoveryResult result = entries.get(index).recover(world, player);
+            RecoveryResult result = entries.get(index).recover(world, player, force);
             changed |= result.didRestoreWorld();
             if (!result.isComplete()) {
                 complete = false;
@@ -95,12 +110,12 @@ public final class WandTransaction {
          * Restores against the supplied current world and only then attempts refund. A retry after
          * a refund failure skips the already restored world and retries the captured receipt.
          */
-        private RecoveryResult recover(World world, EntityPlayer player) {
+        private RecoveryResult recover(World world, EntityPlayer player, boolean force) {
             WandOperation.RollbackResult restoreResult = WandOperation.RollbackResult.restored();
             boolean restoredThisAttempt = false;
             if (!worldRestored) {
                 try {
-                    restoreResult = change.restore(world, player);
+                    restoreResult = change.restore(world, player, force);
                 } catch (RuntimeException exception) {
                     restoreResult = WandOperation.RollbackResult.failed("exception restoring transaction entry", exception);
                 }

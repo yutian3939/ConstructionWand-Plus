@@ -19,6 +19,7 @@ public final class ModMessages {
     public static final int ID_REMOVE_UPGRADE = 7;
     public static final int ID_UNDO_REQUEST = 8;
     public static final int ID_BOUND_CONTAINER = 9;
+    public static final int ID_TOGGLE_UPGRADE = 10;
 
     private static SimpleNetworkWrapper INSTANCE;
 
@@ -37,6 +38,7 @@ public final class ModMessages {
         INSTANCE.registerMessage(PacketRemoveUpgrade.Handler.class, PacketRemoveUpgrade.class, ID_REMOVE_UPGRADE, Side.SERVER);
         INSTANCE.registerMessage(PacketUndoRequest.Handler.class, PacketUndoRequest.class, ID_UNDO_REQUEST, Side.SERVER);
         INSTANCE.registerMessage(PacketBoundContainer.Handler.class, PacketBoundContainer.class, ID_BOUND_CONTAINER, Side.SERVER);
+        INSTANCE.registerMessage(PacketToggleUpgrade.Handler.class, PacketToggleUpgrade.class, ID_TOGGLE_UPGRADE, Side.SERVER);
     }
 
     public static <MSG extends IMessage> void sendToServer(MSG message) {

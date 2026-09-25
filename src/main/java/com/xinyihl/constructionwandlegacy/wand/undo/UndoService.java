@@ -33,7 +33,10 @@ public final class UndoService {
         if (transaction == null || transaction.isEmpty()) {
             return;
         }
-        Deque<WandTransaction> entries = getEntry(playerId).entries;
+        PlayerEntry entry = getEntry(playerId);
+        // A new operation replaces whatever the previous undo attempt was acting on.
+        entry.forceUndo = false;
+        Deque<WandTransaction> entries = entry.entries;
         entries.addLast(transaction);
         while (entries.size() > HISTORY_SIZE) {
             entries.removeFirst();
@@ -97,18 +100,27 @@ public final class UndoService {
     }
 
     boolean undo(UUID playerId, int dimension, @Nullable World world, @Nullable EntityPlayer player) {
-        Deque<WandTransaction> entries = getEntry(playerId).entries;
+        PlayerEntry entry = getEntry(playerId);
+        Deque<WandTransaction> entries = entry.entries;
         WandTransaction transaction = entries.peekLast();
         if (transaction == null || transaction.getDimension() != dimension) {
+            entry.forceUndo = false;
             return false;
         }
 
-        WandTransaction.RecoveryResult result = transaction.recover(world, player);
+        boolean force = entry.forceUndo;
+        WandTransaction.RecoveryResult result = transaction.recover(world, player, force);
         if (!result.isComplete() && result.getFailure() != null) {
             logger.error("Wand transaction recovery was not completed: {}", result.getFailure().getMessage(), result.getFailure().getCause());
         }
         if (result.isComplete() && transaction.isComplete()) {
             entries.removeLast();
+            entry.forceUndo = false;
+        } else {
+            // The undo was refused (for example because harvested items or stored fluid are
+            // missing). The next undo is forced: it restores the world without taking the missing
+            // items back.
+            entry.forceUndo = true;
         }
         return result.didRestoreWorld();
     }
@@ -159,6 +171,7 @@ public final class UndoService {
         private final Deque<WandTransaction> entries = new ArrayDeque<>();
         private final Deque<PendingEntry> pending = new ArrayDeque<>();
         private boolean undoActive;
+        private boolean forceUndo;
     }
 
     private static final class PendingEntry {
