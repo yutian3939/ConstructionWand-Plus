@@ -1,0 +1,8 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "constructionwandlegacy:item/diamond_wand",
+    "layer1": "constructionwandlegacy:item/overlay_core"
+  }
+}
+

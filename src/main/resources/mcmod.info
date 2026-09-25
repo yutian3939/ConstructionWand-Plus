@@ -1,0 +1,12 @@
+[
+  {
+    "modid": "constructionwandlegacy",
+    "name": "Construction Wand Legacy",
+    "description": "Backport of Construction Wand features to Minecraft 1.12.2.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "authorList": [
+      "xinyihl"
+    ]
+  }
+]

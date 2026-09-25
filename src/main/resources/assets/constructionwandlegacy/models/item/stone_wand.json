@@ -1,0 +1,15 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "constructionwandlegacy:item/stone_wand"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "constructionwandlegacy:using_core": 1.0
+      },
+      "model": "constructionwandlegacy:item/stone_wand_core"
+    }
+  ]
+}
+
