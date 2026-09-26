@@ -42,9 +42,9 @@ public final class ModRecipes {
                 'C', "chest");
 
         register(event, ModItems.CORE_SLAY, new ItemStack(ModItems.ITEM_CORE_SLAY),
-                " S ",
-                "DNS",
-                " S ",
+                "SNS",
+                "NDN",
+                "SNS",
                 'S', Items.DIAMOND_SWORD,
                 'N', Items.NETHER_STAR,
                 'D', com.xinyihl.constructionwandlegacy.items.ModItems.CORE_DESTRUCTION);
@@ -65,10 +65,11 @@ public final class ModRecipes {
 
         register(event, ModItems.UPGRADE_FLIGHT, new ItemStack(ModItems.ITEM_UPGRADE_FLIGHT),
                 " F ",
-                "FDF",
+                "ENE",
                 " F ",
                 'F', Items.FEATHER,
-                'D', Items.DIAMOND);
+                'E', Items.ELYTRA,
+                'N', Items.NETHER_STAR);
     }
 
     private static void register(RegistryEvent.Register<IRecipe> event, String name, ItemStack output, Object... recipe) {

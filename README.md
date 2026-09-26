@@ -1,6 +1,6 @@
-# ConstructionWandLegacy
+# ConstructionWand-Plus
 
-Backport of Construction Wand features for Minecraft 1.12.2 (Forge).
+A modded fork of [ConstructionWandLegacy](https://github.com/xinyihl/ConstructionWandLegacy) (itself a backport of Construction Wand features for Minecraft 1.12.2 / Forge), adding new cores, passive upgrades and quality-of-life enhancements on top of the original feature set.
 
 ## Implemented Features
 
@@ -58,7 +58,7 @@ Current default interactions:
 
 ## Configuration File
 
-A config file is generated after first launch at `config/ConstructionWandLegacy.cfg`.
+A config file is generated after first launch at `config/ConstructionWand-Plus.cfg`.
 
 ### Configurable Options
 
@@ -127,7 +127,7 @@ wandLimits {
 
 ## Optional Compatibility and API
 
-ConstructionWandLegacy can run without AE2, ProjectE, or Baubles. Optional core items, models, and recipes are registered only when the corresponding mod is loaded.
+ConstructionWand-Plus can run without AE2, ProjectE, or Baubles. Optional core items, models, and recipes are registered only when the corresponding mod is loaded.
 
 - AE compatibility targets the `appliedenergistics2` mod ID and is built against AE2 Extended Life.
 - ProjectE compatibility targets the `projecte` mod ID.
@@ -135,7 +135,7 @@ ConstructionWandLegacy can run without AE2, ProjectE, or Baubles. Optional core 
 
 There is currently no stable public third-party API. Packages such as `compat`, `material`, and `wand` are internal implementation details and may change between releases.
 
-Existing item, core, and recipe registry names remain compatibility data. Existing wand option and binding NBT, including `wand_options`, `cores`, `cores_sel`, `bound_container_pos`, `bound_container_dim`, `ae_bound_pos`, and `ae_bound_dim`, remains readable without migration. The configuration filename remains `ConstructionWandLegacy.cfg`.
+Existing item, core, and recipe registry names remain compatibility data. Existing wand option and binding NBT, including `wand_options`, `cores`, `cores_sel`, `bound_container_pos`, `bound_container_dim`, `ae_bound_pos`, and `ae_bound_dim`, remains readable without migration. The configuration filename remains `ConstructionWand-Plus.cfg`.
 
 ## Development Build
 
