@@ -3,6 +3,7 @@
 # ConstructionWand-Plus
 
 基于 [ConstructionWandLegacy](https://github.com/xinyihl/ConstructionWandLegacy) 魔改的私货 mod。
+代码全权由deepseek负责。
 建筑手杖迎来了史诗级加强，现在你的手杖充满了抛瓦！
 
 本 mod 在保留原版全部功能的基础上，新增了挖掘核心、仓储核心、秒杀核心，以及时运/自动冶炼/飞行三种被动升级，并对掉落、流体、撤销、配置界面等系统做了大量增强。

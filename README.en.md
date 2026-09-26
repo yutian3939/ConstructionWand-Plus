@@ -3,6 +3,7 @@ English | [简体中文](README.md)
 # ConstructionWand-Plus
 
 A modded fork of [ConstructionWandLegacy](https://github.com/xinyihl/ConstructionWandLegacy) (itself a backport of Construction Wand features for Minecraft 1.12.2 / Forge), adding new cores, passive upgrades and quality-of-life enhancements on top of the original feature set.
+The code is fully managed by deepseek.
 
 ## Implemented Features
 
