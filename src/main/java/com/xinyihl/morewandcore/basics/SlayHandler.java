@@ -22,8 +22,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LootingLevelEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -57,6 +60,18 @@ public final class SlayHandler {
      * victim that never drops experience (e.g. a child) cannot leak.
      */
     private static final Map<EntityLivingBase, EntityPlayer> PENDING_XP = new WeakHashMap<>();
+
+    /**
+     * Killed targets that have to be held down because a protection puts their health back after the
+     * kill, usually every tick (the Manaita armour does exactly that). Killed players also end up
+     * here: the server ignores a respawn request while the player still has health, so the health has
+     * to stay at zero until they actually respawn. The value is how many ticks are left to keep the
+     * target down.
+     */
+    private static final Map<EntityLivingBase, Integer> DOOMED = new WeakHashMap<>();
+
+    private static final int PLAYER_DOOM_TICKS = 1200;
+    private static final int OTHER_DOOM_TICKS = 100;
 
     /**
      * {@code EntityLivingBase.recentlyHit}, which marks the target as "recently hit" so equipped mobs
@@ -96,6 +111,9 @@ public final class SlayHandler {
         if (!killed) {
             return;
         }
+        // A per-tick protection may put the target's health back after the kill, so it is held down
+        // from here on.
+        DOOMED.put(victim, victim instanceof EntityPlayer ? PLAYER_DOOM_TICKS : OTHER_DOOM_TICKS);
         // Only mobs drop experience through the vanilla deferred drop; players do not, so they are
         // kept out of the pending map.
         if (!(victim instanceof EntityPlayer)) {
@@ -261,6 +279,53 @@ public final class SlayHandler {
         if (event.isCanceled()) {
             event.setCanceled(false);
             event.getEntityLiving().setHealth(0.0F);
+        }
+    }
+
+    /**
+     * Runs after every other attack handler. Some protections cancel the attack outright; for a
+     * target the slay core is killing, the attack is let through so the normal damage and death path
+     * runs, which keeps drops, kill credit and the death message intact.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onLivingAttackLowest(LivingAttackEvent event) {
+        SlayContext ctx = SLAYING.get();
+        if (ctx != null && event.getEntityLiving() == ctx.target && event.isCanceled()) {
+            event.setCanceled(false);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onLivingHurtLowest(LivingHurtEvent event) {
+        SlayContext ctx = SLAYING.get();
+        if (ctx != null && event.getEntityLiving() == ctx.target && event.isCanceled()) {
+            event.setCanceled(false);
+        }
+    }
+
+    /**
+     * Runs after every other living update. A protection that restores health every tick would undo
+     * the kill, so the health of a killed target is put back to zero. This also lets a killed player
+     * respawn, because the server ignores a respawn request while the player still has health.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingUpdateLowest(LivingEvent.LivingUpdateEvent event) {
+        EntityLivingBase entity = event.getEntityLiving();
+        Integer remaining = DOOMED.get(entity);
+        if (remaining == null) {
+            return;
+        }
+        if (entity.isDead) {
+            DOOMED.remove(entity);
+            return;
+        }
+        if (entity.getHealth() > 0.0F) {
+            entity.setHealth(0.0F);
+        }
+        if (remaining <= 1) {
+            DOOMED.remove(entity);
+        } else {
+            DOOMED.put(entity, remaining - 1);
         }
     }
 

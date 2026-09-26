@@ -49,6 +49,14 @@ public final class ModRecipes {
                 'N', Items.NETHER_STAR,
                 'D', com.xinyihl.constructionwandlegacy.items.ModItems.CORE_DESTRUCTION);
 
+        register(event, ModItems.UPGRADE_DEFENSE, new ItemStack(ModItems.ITEM_UPGRADE_DEFENSE),
+                "DOD",
+                "OTO",
+                "DOD",
+                'D', Items.DIAMOND,
+                'O', Blocks.OBSIDIAN,
+                'T', Items.TOTEM_OF_UNDYING);
+
         register(event, ModItems.UPGRADE_FORTUNE, new ItemStack(ModItems.ITEM_UPGRADE_FORTUNE),
                 " L ",
                 "LDL",

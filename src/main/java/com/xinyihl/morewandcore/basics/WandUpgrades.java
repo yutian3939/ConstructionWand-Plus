@@ -118,6 +118,10 @@ public final class WandUpgrades {
         return isEnabled(wand, ModItems.ITEM_UPGRADE_FLIGHT);
     }
 
+    public static boolean hasDefense(ItemStack wand) {
+        return isEnabled(wand, ModItems.ITEM_UPGRADE_DEFENSE);
+    }
+
     /**
      * @return the fortune level the fortune component grants, from the configuration
      */

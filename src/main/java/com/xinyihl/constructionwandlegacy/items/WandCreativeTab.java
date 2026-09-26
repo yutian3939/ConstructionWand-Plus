@@ -48,6 +48,7 @@ public final class WandCreativeTab extends CreativeTabs {
         add(items, com.xinyihl.morewandcore.item.ModItems.ITEM_UPGRADE_FORTUNE);
         add(items, com.xinyihl.morewandcore.item.ModItems.ITEM_UPGRADE_AUTO_SMELT);
         add(items, com.xinyihl.morewandcore.item.ModItems.ITEM_UPGRADE_FLIGHT);
+        add(items, com.xinyihl.morewandcore.item.ModItems.ITEM_UPGRADE_DEFENSE);
     }
 
     private static void add(NonNullList<ItemStack> items, Item item) {

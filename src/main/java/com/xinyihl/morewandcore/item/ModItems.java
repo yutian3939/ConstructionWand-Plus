@@ -17,6 +17,7 @@ public final class ModItems {
     public static final String UPGRADE_FORTUNE = "upgrade_fortune";
     public static final String UPGRADE_AUTO_SMELT = "upgrade_auto_smelt";
     public static final String UPGRADE_FLIGHT = "upgrade_flight";
+    public static final String UPGRADE_DEFENSE = "upgrade_defense";
 
     public static Item ITEM_CORE_DIGGING;
     public static Item ITEM_CORE_STORAGE;
@@ -24,6 +25,7 @@ public final class ModItems {
     public static Item ITEM_UPGRADE_FORTUNE;
     public static Item ITEM_UPGRADE_AUTO_SMELT;
     public static Item ITEM_UPGRADE_FLIGHT;
+    public static Item ITEM_UPGRADE_DEFENSE;
 
     private ModItems() {
     }
@@ -36,6 +38,7 @@ public final class ModItems {
         ITEM_UPGRADE_FORTUNE = register(event, UPGRADE_FORTUNE, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FORTUNE + ".desc"), WandCreativeTab.INSTANCE);
         ITEM_UPGRADE_AUTO_SMELT = register(event, UPGRADE_AUTO_SMELT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_AUTO_SMELT + ".desc"), WandCreativeTab.INSTANCE);
         ITEM_UPGRADE_FLIGHT = register(event, UPGRADE_FLIGHT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FLIGHT + ".desc"), WandCreativeTab.INSTANCE);
+        ITEM_UPGRADE_DEFENSE = register(event, UPGRADE_DEFENSE, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_DEFENSE + ".desc"), WandCreativeTab.INSTANCE);
     }
 
     private static Item register(RegistryEvent.Register<Item> event, String name, Item item, CreativeTabs tab) {
