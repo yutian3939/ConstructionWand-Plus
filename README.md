@@ -1,164 +1,184 @@
+[English](README.en.md) | 简体中文
+
 # ConstructionWand-Plus
 
-A modded fork of [ConstructionWandLegacy](https://github.com/xinyihl/ConstructionWandLegacy) (itself a backport of Construction Wand features for Minecraft 1.12.2 / Forge), adding new cores, passive upgrades and quality-of-life enhancements on top of the original feature set.
+基于 [ConstructionWandLegacy](https://github.com/xinyihl/ConstructionWandLegacy) 魔改的私货 mod。
+建筑手杖迎来了史诗级加强，现在你的手杖充满了抛瓦！
 
-## Implemented Features
+本 mod 在保留原版全部功能的基础上，新增了挖掘核心、存储核心、秒杀核心，以及时运/自动冶炼/飞行三种被动升级，并对掉落、流体、撤销、配置界面等系统做了大量增强。
 
-### Items and Core Modules
+## 原版内容（简述）
 
-- 4 wand types: Stone / Iron / Diamond / Infinity
-- 4 supported cores: Angel / Destruction / AE / ProjectE. Angel and Destruction are always available; AE and ProjectE are registered only when their corresponding mods are loaded.
-- Core overlay model and tinting (wand appearance changes after installing a core)
+原版 ConstructionWandLegacy 是 Construction Wand 的 1.12.2 移植版，主要包含：
 
-### Placement and Destruction Logic
+- 4 种法杖：石制 / 铁制 / 钻石 / 无尽；
+- 4 种核心：天使 / 破坏 / AE / ProjectE（后两者仅在对应 mod 加载时注册）；
+- 三种模式：建造、天使（空中放置）、破坏；
+- 可切换选项：锁定 / 方向 / 替换 / 匹配 / 随机 / 核心；
+- 撤销历史与撤销预览（红=破坏、绿=撤销）；
+- 可选兼容：Baubles（饰品栏供材）、AE2（ME 网络供材 + 绑定控制器）、ProjectE（EMC 供材）；
+- Coremod 光照优化（合并逐方块光照更新，默认关闭）。
 
-- Construction mode
-- Angel mode: supports mid-air placement
-- Destruction mode
-- Optional Baubles compatibility: container items equipped in Baubles slots can supply building blocks
-- Optional AE2 compatibility: bind a wand with the AE core selected to an AE2 Controller to draw materials from that network
-- Optional ProjectE compatibility: a wand with the ProjectE core selected can consume EMC for learned blocks
-- Uses an interaction flow close to the original implementation:
-  - Placement goes through `ItemBlock.placeBlockAt`
-  - Breaking goes through `removedByPlayer` + `onPlayerDestroy`
-  - Integrated with Forge Place/Break events
+以上内容本 mod 完整保留，下面是魔改新增的部分。
 
-### Upgrades and Options
+## 魔改新增内容
 
-- Core installation upgrade (combine wand + core in the crafting grid)
-- Toggleable options (lock/direction/replace/match/random/core)
-- Wand GUI (open with key combo while right-clicking in air)
+### 新增核心
 
-### Undo and Preview
+| 核心 | 类型 | 说明 |
+|---|---|---|
+| 挖掘核心 | 行为核心 | 挖掉方块但**保留掉落物**（区别于破坏核心直接销毁），支持精准采集、时运、自动冶炼、掉落去向 |
+| 存储核心 | 材料核心 | 以「绑定的容器」作为建筑材料来源，也可回存掉落物与流体 |
+| 秒杀核心 | 行为核心 | 秒杀生物，掉落物与经验直接归玩家，支持时运、精准采集刷怪蛋 |
 
-- Undo history
-- Undo preview sync (triggered by key query)
-- Automatic preview refresh after undo
-- Preview colors:
-  - Destruction core: red
-  - Undo preview: green
-  - Angel core supports air-target preview
+### 新增升级（被动，常驻生效）
 
-### Assets and Localization
+| 升级 | 效果 |
+|---|---|
+| 时运升级 | 给挖掘核心附加时运等级（配置可调），对秒杀核心则作为抢夺等级 |
+| 自动冶炼升级 | 挖掘掉落自动熔炼（矿石直接变锭），并正确结算熔炼经验 |
+| 飞行升级 | 背包（含副手）里带着装有该升级的法杖即获得创造飞行，法杖离身即失去（离身瞬间有摔落保护） |
+| 防御升级 | 背包（含副手）里带着装有该升级的法杖即获得无敌：免疫一切伤害与死亡、保持满血并清除负面效果 |
 
-- Complete item models and textures
-- `en_us.lang` / `zh_cn.lang`
+> 升级与核心的安装方式沿用原版动态配方：**法杖 + 核心/升级** 在合成栏合成即可安装；已安装的不会重复合成。
 
-## Default Controls
+### 挖掘核心
 
-Current default interactions:
+- 保留掉落物：走 `getDrops` + Forge 收获事件，与破坏核心不同；
+- 精准采集：反射解析 `Block.getSilkTouchDrop`（兼容 MCP/SRG 名）；
+- 时运：取法杖附魔时运与「时运升级」等级的较大值，冶炼模式下先熔炼再乘时运；
+- 自动冶炼：`FurnaceRecipes` 查熔炼结果替换掉落并结算经验；
+- 经验结算：方块经验直接给玩家；通过 `EntityJoinWorldEvent` 捕获 mod 方块 break 钩子生成的经验球转为经验；
+- 掉落去向：按 `drops_destination` 配置分发到背包 / 材料核心 / 地面；
+- 可配置是否破坏基岩等不可破坏方块，以及是否掉落（见「配置文件」）。
 
-- `Shift + Ctrl + Mouse Wheel`: toggle lock mode
-- `Shift + Ctrl + Left Click` (swing in air): switch core
-- `Shift + Ctrl + Right Click` (in air): open wand config GUI
-- Hold `Shift + Ctrl`: show undo preview
-- `Shift + Ctrl` + the undo key (default `Z`, rebindable in Controls): perform undo
+### 存储核心与容器绑定
 
-> Note: The GUI only opens when right-clicking in air, so a right click on a block stays available for building.
+- 潜行右键容器即可绑定到法杖（也接受纯流体容器），按顺序追加；**对已绑定的容器再次潜行右键即解绑**；
+- 容器被破坏后绑定不会崩溃，只是解析时静默跳过（该位置若换成别的容器会被自动识别并使用）；
+- 绑定列表统一提供物品/流体的 insert/count/take/fill/drain/capacity 接口，跳过未加载或失效的 TileEntity；
+- 材料来源：绑定容器优先、玩家背包兜底，合并为单一材料源；
+- 兼容 Mekanism 流体储罐（修正了 capability 侧参数导致的流体无法存取问题）。
 
-## Configuration File
+### 流体处理（挖掘/破坏核心）
 
-A config file is generated after first launch at `config/ConstructionWand-Plus.cfg`.
+`fluid_removal` 三档：
 
-### Configurable Options
+- `off`：流体完全忽略；
+- `smart`（默认）：只清除「被挖掉方块所围住的流体」（BFS 找围合口袋，上限 64 格，避免误清海洋）；
+- `on`：流体当作普通方块参与匹配。
 
-- `wandLimits.stoneWandMaxBlocks`: default max placement count for Stone Wand
-- `wandLimits.ironWandMaxBlocks`: default max placement count for Iron Wand
-- `wandLimits.diamondWandMaxBlocks`: default max placement count for Diamond Wand
-- `wandLimits.infinityWandMaxBlocks`: default max placement count for Infinity Wand
-- `placement.allowTileEntityPlacement`: whether wand placement of TileEntity blocks is allowed
-- `placement.blockWhitelist`: placement whitelist (empty means whitelist disabled)
-- `placement.blockBlacklist`: placement blacklist
-- `placement.propertyCopyWhitelist`: keyword whitelist of property names allowed to copy in `TARGET` mode (e.g. `facing`, `axis`)
-- `performance.deferredLightingUpdates`: experimental coalescing of per-block chunk lighting updates during wand execution (disabled by default; requires a full restart)
-- `matching.similarBlocks`: groups of blocks treated as equivalent in `SIMILAR` mode
+相关细节：
 
-Whitelist/blacklist entry formats:
+- 移除的流体记入撤销历史，撤销时放回；
+- `fluid_storage` 开启时，挖掘核心把源流体存入材料核心（每格 1 桶，流动流体不存，容量不足则留在世界）。
 
-- `modid:block` (matches all variants of the block)
-- `modid:block@meta` (matches only the specific meta)
+### 秒杀核心
 
-Each `matching.similarBlocks` entry is one group of registry names separated by `;`, for example `minecraft:dirt;minecraft:grass`.
+- 左键单体秒杀、潜行右键范围秒杀（半径按法杖 tier 配置）；
+- 掉落物与经验直接归玩家（经验球不再掉到原地）；
+- 时运升级 = 抢夺；
+- 精准采集开启时，额外掉落对应生物的刷怪蛋（无刷怪蛋的生物跳过）；
 
-When Forge emits a config-changed event, both the placement rules and the similar-block index are rebuilt from the new values. Restart the game or server after editing the file directly so Forge reloads it.
+**注意该秒杀的强度并不低**
+经过测试暮色满盾巫妖王、混沌守卫和无尽套都可以直接秒杀，砧板套打入假死，氪金萝莉打不动且被反杀，由于这不是一个神器mod,现在已经可以秒杀绝大部分生物，继续针对砧板和氪金萝莉没有意义，所以大概率不会再加强秒杀了。
 
-Example:
+> 默认也会秒杀玩家（但**永不针对使用者本人**）；如需关闭，将配置 `slay.affectPlayers` 设为 `false`。
+
+
+### 额外选项
+
+存于法杖 NBT 的独立根标签 `wand_extra_options`（不混入原版 `wand_options`）：
+
+1. `silk_touch`（no/yes）——挖掘/秒杀核心是否精准采集；
+2. `drops_destination`（inventory/material/ground）——掉落物去向；
+3. `fluid_removal`（off/smart/on）——流体处理；
+4. `fluid_storage`（no/yes）——挖掘核心是否把流体存入材料核心。
+
+另有 `WandLimit`：每根法杖可单独调低单次操作方块上限（不超服务器配置）。
+
+### 撤销系统增强
+
+- `DropReclaim`：撤销挖掘时「全有或全无」回收掉落物（背包+材料核心），缺失则拒绝撤销并保留历史以便重试；
+- `ExperienceHelper`：撤销挖掘时扣回已发放经验（含等级精确计算）；
+- `UndoFeedback`：一次撤销里多个方块缺失的物品/流体合并成一条聊天提示，避免刷屏；
+- 撤销/放回时清除侵入的流动液体（覆盖破坏、挖掘、流体放回等全部路径）。
+
+### 配置界面增强
+
+- 升级图标：**左键点击切换启用/禁用**（禁用后仍安装但效果失效，图标变暗），**Shift+左键卸下**；
+- 显示绑定容器数量、核心/升级描述与启用状态。
+
+### 创造物品栏
+
+- 本 mod 所有物品归入独立创造标签页（图标为无尽手杖）；
+- 顺序：法杖（弱→强）→ 行为核心 → 材料核心 → 升级。
+
+### 指令
+
+- `/constructionwand limit`（别名 `/cwand`）：查看存储核心绑定容器上限；
+- `/constructionwand limit <值>`：设置上限，`-1` 表示无限制（权限等级 2，改动会写回配置并同步）。
+
+## 按键与操作
+
+原版：
+
+- `Shift + Ctrl + 鼠标滚轮`：切换锁定模式；
+- `Shift + Ctrl + 左键`（对空气）：切换核心；
+- `Shift + Ctrl + 右键`（对空气）：打开法杖配置 GUI；
+- 按住 `Shift + Ctrl`：显示撤销预览；
+- `Shift + Ctrl` + 撤销键（默认 `Z`，可在按键设置中改绑）：执行撤销。
+
+魔改新增：
+
+- 挖掘核心：右键挖方块（保留掉落）；
+- 秒杀核心：左键单体秒杀，潜行右键范围秒杀；
+- 存储核心：潜行右键容器绑定（再次潜行右键解绑）；
+- 配置界面：点击升级图标切换启用/禁用，`Shift`+点击卸下。
+
+## 配置文件
+
+首次启动后生成 `config/ConstructionWand-Plus.cfg`。魔改新增配置节：
 
 ```cfg
-placement {
-  B:allowTileEntityPlacement=true
-  S:propertyCopyWhitelist <
-    facing
-    axis
-    rotation
-    half
-    hinge
-    shape
-    part
-    face
-   >
-  S:blockWhitelist <
-    minecraft:stone
-    minecraft:stained_hardened_clay@14
-   >
-  S:blockBlacklist <
-    minecraft:chest
-    minecraft:mob_spawner
-   >
+wandUpgrades {
+  I:fortuneLevel=3        # 时运升级给挖掘核心的时运等级（1~10）
 }
 
-matching {
-  S:similarBlocks <
-    minecraft:dirt;minecraft:grass
-   >
+storage {
+  I:maxBoundContainers=8  # 存储核心可绑定容器上限，-1 为无限制
 }
 
-performance {
-  B:deferredLightingUpdates=false
+digging {
+  B:breakUnbreakable=false # 挖掘核心能否破坏基岩等不可破坏方块
+  B:dropUnbreakable=false  # 破坏的不可破坏方块是否掉落（仅 breakUnbreakable 开启时生效）
 }
 
-wandLimits {
-  I:stoneWandMaxBlocks=9
-  I:ironWandMaxBlocks=27
-  I:diamondWandMaxBlocks=81
-  I:infinityWandMaxBlocks=256
+slay {
+  B:affectPlayers=true     # 秒杀是否也针对玩家（永不针对使用者本人）
+  I:stoneSlayRadius=16     # 各法杖秒杀半径（曼哈顿距离），石/铁/钻/无尽
+  I:ironSlayRadius=32
+  I:diamondSlayRadius=64
+  I:infinitySlayRadius=128
 }
 ```
 
-## Optional Compatibility and API
+原版配置节（`wandLimits`、`placement`、`matching`、`performance`）保持不变，详见[英文 README](README.en.md)。
 
-ConstructionWand-Plus can run without AE2, ProjectE, or Baubles. Optional core items, models, and recipes are registered only when the corresponding mod is loaded.
+## 合成配方
 
-- AE compatibility targets the `appliedenergistics2` mod ID and is built against AE2 Extended Life.
-- ProjectE compatibility targets the `projecte` mod ID.
-- Baubles compatibility targets the `baubles` mod ID and only adds an extra material source; it does not add a core.
+| 物品 | 配方 |
+|---|---|
+| 挖掘核心 | 破坏核心 + 钻石镐/铲/锄/斧（环绕） |
+| 存储核心 | 玻璃板 + 末影珍珠 + 箱子 |
+| 秒杀核心 | 破坏核心 + 下界之星×4 + 钻石剑×4 |
+| 防御升级 | 钻石×4 + 黑曜石×4 + 不死图腾 |
+| 时运升级 | 钻石 + 青金石 |
+| 自动冶炼升级 | 熔炉 + 烈焰粉 |
+| 飞行升级 | 下界之星 + 鞘翅×2 + 羽毛×2 |
 
-There is currently no stable public third-party API. Packages such as `compat`, `material`, and `wand` are internal implementation details and may change between releases.
+## 兼容性
 
-Existing item, core, and recipe registry names remain compatibility data. Existing wand option and binding NBT, including `wand_options`, `cores`, `cores_sel`, `bound_container_pos`, `bound_container_dim`, `ae_bound_pos`, and `ae_bound_dim`, remains readable without migration. The configuration filename remains `ConstructionWand-Plus.cfg`.
-
-## Development Build
-
-### Requirements
-
-- Use JDK 17 to run Gradle (the project uses Java Toolchain to compile to a Java 8 target)
-- Use `gradlew.bat` on Windows, and `./gradlew` on Linux/macOS
-
-### Common Commands
-
-```bash
-# Compile source code
-./gradlew compileJava
-
-# Process resources
-./gradlew processResources
-
-# Run unit tests
-./gradlew test
-
-# Build artifacts
-./gradlew build
-
-# Run development client
-./gradlew runClient
-```
+- 新增内容完全复用原版的 `WandAction` / `WandOperation` / `MaterialSource` / `IWandCore` 抽象，事务语义（预留/提交/退款）与撤销路径对新增操作同样成立；
+- AE2 / ProjectE / Baubles 均为软依赖，未加载时不注册对应核心；
+- 存储核心已适配 Mekanism 流体储罐；破坏/挖掘/流体放回均能正确处理流动液体侵入。
