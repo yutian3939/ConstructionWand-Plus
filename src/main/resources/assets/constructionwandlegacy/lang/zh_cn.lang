@@ -1,3 +1,4 @@
+itemGroup.constructionwandlegacy=建筑法杖
 item.constructionwandlegacy.stone_wand.name=石制手杖
 item.constructionwandlegacy.iron_wand.name=铁制手杖
 item.constructionwandlegacy.diamond_wand.name=钻石手杖
@@ -81,12 +82,15 @@ constructionwandlegacy.tooltip.container_tip=潜行右键容器来绑定
 
 item.constructionwandlegacy.core_digging.name=挖掘手杖核心
 item.constructionwandlegacy.core_storage.name=仓储手杖核心
+item.constructionwandlegacy.core_slay.name=秒杀手杖核心
 constructionwandlegacy.tooltip.storage_bound=已绑定 %s 个容器
 constructionwandlegacy.tooltip.storage_unbound=潜行右键容器进行绑定（可绑定多个）
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging=§2挖掘核心
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging.desc=挖掘面向你一侧的方块，保留掉落物并直接获得经验（无法破坏的方块除外）
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage=§6仓储核心
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage.desc=使用绑定到容器的存取通道
+constructionwandlegacy.option.cores.constructionwandlegacy:core_slay=§d秒杀核心
+constructionwandlegacy.option.cores.constructionwandlegacy:core_slay.desc=左键直接秒杀任意生物；潜行右键秒杀曼哈顿范围内的生物。掉落物、经验、时运与自动熔炼均与挖掘核心一致
 constructionwandlegacy.option.material_cores.constructionwandlegacy:core_storage=§6仓储核心
 constructionwandlegacy.option.material_cores.constructionwandlegacy:core_storage.desc=从绑定的容器中取用方块，挖掘产物也可以存入其中
 constructionwandlegacy.option.silk_touch=精准采集: 

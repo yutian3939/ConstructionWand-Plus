@@ -39,19 +39,19 @@ public final class ModItems {
 
     @SubscribeEvent
     public static void onRegisterItems(RegistryEvent.Register<Item> event) {
-        WAND_STONE = register(event, "stone_wand", new ItemWandBasic(WandTier.STONE, new ItemStack(Blocks.COBBLESTONE)), CreativeTabs.TOOLS);
-        WAND_IRON = register(event, "iron_wand", new ItemWandBasic(WandTier.IRON, new ItemStack(Items.IRON_INGOT)), CreativeTabs.TOOLS);
-        WAND_DIAMOND = register(event, "diamond_wand", new ItemWandBasic(WandTier.DIAMOND, new ItemStack(Items.DIAMOND)), CreativeTabs.TOOLS);
-        WAND_INFINITY = register(event, "infinity_wand", new ItemWandInfinity(), CreativeTabs.TOOLS);
+        WAND_STONE = register(event, "stone_wand", new ItemWandBasic(WandTier.STONE, new ItemStack(Blocks.COBBLESTONE)), WandCreativeTab.INSTANCE);
+        WAND_IRON = register(event, "iron_wand", new ItemWandBasic(WandTier.IRON, new ItemStack(Items.IRON_INGOT)), WandCreativeTab.INSTANCE);
+        WAND_DIAMOND = register(event, "diamond_wand", new ItemWandBasic(WandTier.DIAMOND, new ItemStack(Items.DIAMOND)), WandCreativeTab.INSTANCE);
+        WAND_INFINITY = register(event, "infinity_wand", new ItemWandInfinity(), WandCreativeTab.INSTANCE);
 
-        CORE_ANGEL = register(event, "core_angel", new ItemCoreAngel(), CreativeTabs.MISC);
-        CORE_DESTRUCTION = register(event, "core_destruction", new ItemCoreDestruction(), CreativeTabs.MISC);
+        CORE_ANGEL = register(event, "core_angel", new ItemCoreAngel(), WandCreativeTab.INSTANCE);
+        CORE_DESTRUCTION = register(event, "core_destruction", new ItemCoreDestruction(), WandCreativeTab.INSTANCE);
 
         if (isProjectECoreEnabled()) {
-            CORE_PROJECTE = register(event, "core_projecte", new ItemCoreProjectE(), CreativeTabs.MISC);
+            CORE_PROJECTE = register(event, "core_projecte", new ItemCoreProjectE(), WandCreativeTab.INSTANCE);
         }
         if (isAE2CoreEnabled()) {
-            CORE_AE = register(event, "core_ae", new ItemCoreAE(), CreativeTabs.MISC);
+            CORE_AE = register(event, "core_ae", new ItemCoreAE(), WandCreativeTab.INSTANCE);
         }
     }
 

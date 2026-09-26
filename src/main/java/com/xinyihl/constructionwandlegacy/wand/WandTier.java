@@ -29,4 +29,19 @@ public enum WandTier {
                 return spec.getBasePlacementLimit();
         }
     }
+
+    public int getConfiguredSlayRadius() {
+        switch (this) {
+            case STONE:
+                return ModConfig.slay.stoneSlayRadius;
+            case IRON:
+                return ModConfig.slay.ironSlayRadius;
+            case DIAMOND:
+                return ModConfig.slay.diamondSlayRadius;
+            case INFINITY:
+                return ModConfig.slay.infinitySlayRadius;
+            default:
+                return 16;
+        }
+    }
 }

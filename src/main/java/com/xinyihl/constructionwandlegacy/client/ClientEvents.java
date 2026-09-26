@@ -137,6 +137,27 @@ public class ClientEvents {
     }
 
     @SubscribeEvent
+    public void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        EntityPlayer player = event.getEntityPlayer();
+        if (player == null || !modeKeyCombDown(player)) {
+            return;
+        }
+
+        WandTarget target = WandTarget.forHand(player, event.getHand());
+        if (target == null) {
+            return;
+        }
+
+        if (player.world.isRemote) {
+            // The config combo (sneak + ctrl + right click) must open the GUI even when a block is
+            // aimed at, and must never fall through to the wand's sneaking right click (e.g. the slay
+            // core's area kill).
+            Minecraft.getMinecraft().displayGuiScreen(new GuiWand(target, target.resolve(player)));
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
     public void onWorldUnload(WorldEvent.Unload event) {
         if (event.getWorld().isRemote) {
             forceUndoRefresh = true;

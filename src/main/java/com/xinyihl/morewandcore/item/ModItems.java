@@ -1,6 +1,7 @@
 package com.xinyihl.morewandcore.item;
 
 import com.xinyihl.constructionwandlegacy.Tags;
+import com.xinyihl.constructionwandlegacy.items.WandCreativeTab;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
@@ -12,12 +13,14 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public final class ModItems {
     public static final String CORE_DIGGING = "core_digging";
     public static final String CORE_STORAGE = "core_storage";
+    public static final String CORE_SLAY = "core_slay";
     public static final String UPGRADE_FORTUNE = "upgrade_fortune";
     public static final String UPGRADE_AUTO_SMELT = "upgrade_auto_smelt";
     public static final String UPGRADE_FLIGHT = "upgrade_flight";
 
     public static Item ITEM_CORE_DIGGING;
     public static Item ITEM_CORE_STORAGE;
+    public static Item ITEM_CORE_SLAY;
     public static Item ITEM_UPGRADE_FORTUNE;
     public static Item ITEM_UPGRADE_AUTO_SMELT;
     public static Item ITEM_UPGRADE_FLIGHT;
@@ -27,11 +30,12 @@ public final class ModItems {
 
     @SubscribeEvent
     public static void onRegisterItems(RegistryEvent.Register<Item> event) {
-        ITEM_CORE_DIGGING = register(event, CORE_DIGGING, new ItemCoreDigging(), CreativeTabs.MISC);
-        ITEM_CORE_STORAGE = register(event, CORE_STORAGE, new ItemCoreStorage(), CreativeTabs.MISC);
-        ITEM_UPGRADE_FORTUNE = register(event, UPGRADE_FORTUNE, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FORTUNE + ".desc"), CreativeTabs.MISC);
-        ITEM_UPGRADE_AUTO_SMELT = register(event, UPGRADE_AUTO_SMELT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_AUTO_SMELT + ".desc"), CreativeTabs.MISC);
-        ITEM_UPGRADE_FLIGHT = register(event, UPGRADE_FLIGHT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FLIGHT + ".desc"), CreativeTabs.MISC);
+        ITEM_CORE_DIGGING = register(event, CORE_DIGGING, new ItemCoreDigging(), WandCreativeTab.INSTANCE);
+        ITEM_CORE_STORAGE = register(event, CORE_STORAGE, new ItemCoreStorage(), WandCreativeTab.INSTANCE);
+        ITEM_CORE_SLAY = register(event, CORE_SLAY, new ItemCoreSlay(), WandCreativeTab.INSTANCE);
+        ITEM_UPGRADE_FORTUNE = register(event, UPGRADE_FORTUNE, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FORTUNE + ".desc"), WandCreativeTab.INSTANCE);
+        ITEM_UPGRADE_AUTO_SMELT = register(event, UPGRADE_AUTO_SMELT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_AUTO_SMELT + ".desc"), WandCreativeTab.INSTANCE);
+        ITEM_UPGRADE_FLIGHT = register(event, UPGRADE_FLIGHT, new ItemWandUpgrade(Tags.MOD_ID + ".upgrade." + UPGRADE_FLIGHT + ".desc"), WandCreativeTab.INSTANCE);
     }
 
     private static Item register(RegistryEvent.Register<Item> event, String name, Item item, CreativeTabs tab) {

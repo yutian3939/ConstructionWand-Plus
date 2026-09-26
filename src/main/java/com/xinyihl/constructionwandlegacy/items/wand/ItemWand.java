@@ -15,9 +15,12 @@ import com.xinyihl.constructionwandlegacy.wand.WandSpec;
 import com.xinyihl.constructionwandlegacy.wand.WandTier;
 import com.xinyihl.constructionwandlegacy.wand.upgrade.IWandCore;
 import com.xinyihl.constructionwandlegacy.wand.upgrade.IWandUpgrade;
+import com.xinyihl.morewandcore.basics.SlayHandler;
 import com.xinyihl.morewandcore.basics.WandLimit;
+import com.xinyihl.morewandcore.item.ItemCoreSlay;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -125,6 +128,37 @@ public abstract class ItemWand extends Item {
         return Integer.MAX_VALUE;
     }
 
+    private static boolean isSlayCore(ItemStack stack) {
+        return WandDataCodec.read(stack).getSelectedCore() instanceof ItemCoreSlay;
+    }
+
+    /**
+     * Whether the player is holding the config key combination (sneak + ctrl). The sneaking right
+     * click actions (e.g. the slay core's area kill) must not fire while the player is opening the
+     * config screen, so they check this first.
+     */
+    private static boolean isConfigMode(EntityPlayer player) {
+        return ConstructionWandLegacy.instance.getRuntime().getUndoService().isUndoActive(player);
+    }
+
+    private void slayRadius(ItemStack stack, EntityPlayer player) {
+        WandState state = WandDataCodec.read(stack);
+        int radius = WandLimit.resolve(stack, tier.getConfiguredSlayRadius());
+        SlayHandler.slayRadius(player, stack, state, radius);
+    }
+
+    @Override
+    public boolean onLeftClickEntity(ItemStack stack, EntityPlayer player, Entity entity) {
+        if (player.world.isRemote) {
+            return false;
+        }
+        if (isSlayCore(stack)) {
+            SlayHandler.slaySingle(player, entity, stack, WandDataCodec.read(stack));
+            return true;
+        }
+        return super.onLeftClickEntity(stack, player, entity);
+    }
+
     @Override
     public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ) {
         if (world.isRemote) {
@@ -132,6 +166,11 @@ public abstract class ItemWand extends Item {
         }
 
         ItemStack stack = player.getHeldItem(hand);
+
+        if (player.isSneaking() && isSlayCore(stack) && !isConfigMode(player)) {
+            slayRadius(stack, player);
+            return EnumActionResult.SUCCESS;
+        }
 
         if (player.isSneaking() && CompatRegistrar.tryBindAE(stack, player, world, pos)) {
             return EnumActionResult.SUCCESS;
@@ -153,6 +192,9 @@ public abstract class ItemWand extends Item {
         }
 
         if (player.isSneaking()) {
+            if (isSlayCore(stack) && !isConfigMode(player)) {
+                slayRadius(stack, player);
+            }
             return new ActionResult<>(EnumActionResult.SUCCESS, stack);
         }
 

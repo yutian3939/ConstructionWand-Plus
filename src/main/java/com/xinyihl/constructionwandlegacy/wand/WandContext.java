@@ -30,6 +30,7 @@ public final class WandContext {
     private final WandSpec spec;
     private final WandState state;
     private final int placementLimit;
+    private final int slayRadius;
     private final int dimension;
     private final PlacementRules placementRules;
     private final BlockEquivalenceIndex blockEquivalenceIndex;
@@ -45,6 +46,7 @@ public final class WandContext {
         this.state = Objects.requireNonNull(state, "state");
         // The configured maximum of the tier stays the cap, a wand may lower it for itself.
         this.placementLimit = WandLimit.resolve(wand, rules.getPlacementLimit(wandItem.getTier()));
+        this.slayRadius = WandLimit.resolve(wand, wandItem.getTier().getConfiguredSlayRadius());
         this.dimension = world.provider.getDimension();
         this.placementRules = rules.getPlacementRules();
         this.blockEquivalenceIndex = rules.getBlockEquivalenceIndex();
@@ -108,6 +110,10 @@ public final class WandContext {
 
     public int getPlacementLimit() {
         return placementLimit;
+    }
+
+    public int getSlayRadius() {
+        return slayRadius;
     }
 
     public int getDimension() {

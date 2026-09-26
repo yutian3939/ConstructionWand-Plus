@@ -23,6 +23,9 @@ public final class ModConfig {
     @Config.Name("digging")
     public static final Digging digging = new Digging();
 
+    @Config.Name("slay")
+    public static final Slay slay = new Slay();
+
     @Config.Name("performance")
     public static final Performance performance = new Performance();
 
@@ -92,6 +95,24 @@ public final class ModConfig {
 
         @Config.Comment("Whether broken unbreakable blocks are dropped. Only applies when breakUnbreakable is enabled.")
         public boolean dropUnbreakable = false;
+    }
+
+    public static final class Slay {
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.Comment("Max slay radius (Manhattan distance) of the slay core on a Stone Wand")
+        public int stoneSlayRadius = 16;
+
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.Comment("Max slay radius (Manhattan distance) of the slay core on an Iron Wand")
+        public int ironSlayRadius = 32;
+
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.Comment("Max slay radius (Manhattan distance) of the slay core on a Diamond Wand")
+        public int diamondSlayRadius = 64;
+
+        @Config.RangeInt(min = 1, max = 256)
+        @Config.Comment("Max slay radius (Manhattan distance) of the slay core on an Infinity Wand")
+        public int infinitySlayRadius = 128;
     }
 
     public static final class Performance {

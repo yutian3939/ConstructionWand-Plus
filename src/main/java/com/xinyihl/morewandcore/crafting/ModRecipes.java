@@ -41,6 +41,14 @@ public final class ModRecipes {
                 'G', Items.ENDER_PEARL,
                 'C', "chest");
 
+        register(event, ModItems.CORE_SLAY, new ItemStack(ModItems.ITEM_CORE_SLAY),
+                " S ",
+                "DNS",
+                " S ",
+                'S', Items.DIAMOND_SWORD,
+                'N', Items.NETHER_STAR,
+                'D', com.xinyihl.constructionwandlegacy.items.ModItems.CORE_DESTRUCTION);
+
         register(event, ModItems.UPGRADE_FORTUNE, new ItemStack(ModItems.ITEM_UPGRADE_FORTUNE),
                 " L ",
                 "LDL",

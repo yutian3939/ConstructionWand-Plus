@@ -141,6 +141,15 @@ public final class UndoService {
         ModMessages.sendToPlayer(new PacketUndoBlocks(peekLastPositions(player)), player);
     }
 
+    /**
+     * Whether the player is currently holding the wand's config key combination (sneak + ctrl). The
+     * client reports this every tick, and the wand uses it to keep the sneaking right click from
+     * firing its action while the player is trying to open the config screen.
+     */
+    public boolean isUndoActive(EntityPlayer player) {
+        return getEntry(player.getUniqueID()).undoActive;
+    }
+
     public void clearHistory(UUID playerId) {
         history.remove(playerId);
     }

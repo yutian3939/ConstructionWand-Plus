@@ -27,6 +27,7 @@ import com.xinyihl.morewandcore.basics.ExtraWandOption;
 import com.xinyihl.morewandcore.basics.WandLimit;
 import com.xinyihl.morewandcore.basics.WandUpgrades;
 import com.xinyihl.morewandcore.item.ItemCoreDigging;
+import com.xinyihl.morewandcore.item.ItemCoreSlay;
 import com.xinyihl.morewandcore.item.ItemCoreStorage;
 import com.xinyihl.morewandcore.item.ModItems;
 import net.minecraft.block.state.IBlockState;
@@ -380,7 +381,13 @@ public class GuiWand extends GuiScreen {
 
     private int configuredLimit() {
         ItemWand item = wand.getItem() instanceof ItemWand ? (ItemWand) wand.getItem() : null;
-        return item == null ? 1 : Math.max(1, ConfigRuntime.getSnapshot().getPlacementLimit(item.getTier()));
+        if (item == null) {
+            return 1;
+        }
+        if (state.getSelectedCore() instanceof ItemCoreSlay) {
+            return Math.max(1, item.getTier().getConfiguredSlayRadius());
+        }
+        return Math.max(1, ConfigRuntime.getSnapshot().getPlacementLimit(item.getTier()));
     }
 
     /**
@@ -623,8 +630,9 @@ public class GuiWand extends GuiScreen {
     private boolean isApplicable(ExtraWandOption option) {
         switch (option) {
             case SILK_TOUCH:
-            case DROPS_DESTINATION:
                 return hasCore(ItemCoreDigging.class);
+            case DROPS_DESTINATION:
+                return hasCore(ItemCoreDigging.class) || hasCore(ItemCoreSlay.class);
             case FLUID_REMOVAL:
                 return hasCore(ItemCoreDigging.class) || hasCore(ItemCoreDestruction.class);
             case FLUID_STORAGE:

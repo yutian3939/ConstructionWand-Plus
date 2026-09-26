@@ -7,6 +7,7 @@ import com.xinyihl.constructionwandlegacy.wand.WandContext;
 import com.xinyihl.constructionwandlegacy.wand.WandOperation;
 import com.xinyihl.constructionwandlegacy.wand.WandPlan;
 import com.xinyihl.constructionwandlegacy.wand.upgrade.IWandCore;
+import com.xinyihl.morewandcore.basics.DropDelivery;
 import com.xinyihl.morewandcore.basics.DropDestination;
 import com.xinyihl.morewandcore.basics.DropReclaim;
 import com.xinyihl.morewandcore.basics.ExperienceHelper;
@@ -73,83 +74,6 @@ public final class DigOperation implements WandOperation {
         return new DigOperation(pos, world.getBlockState(pos), silkTouch, destination, materialCore, wand);
     }
 
-    /**
-     * @return how much really landed in the inventory. The amount is measured instead of trusting
-     * {@link net.minecraft.inventory.InventoryPlayer#addItemStackToInventory}, which silently
-     * destroys the stack and still reports success when a creative player has no room for it.
-     * Without the measurement the undo would later demand items the player never received.
-     */
-    private static int insertIntoInventory(EntityPlayer player, ItemStack stack) {
-        if (stack.isEmpty()) {
-            return 0;
-        }
-        int before = DropReclaim.countInInventory(player, stack);
-        player.inventory.addItemStackToInventory(stack.copy());
-        int after = DropReclaim.countInInventory(player, stack);
-        return Math.max(0, Math.min(stack.getCount(), after - before));
-    }
-
-    private static void record(List<ItemStack> delivered, ItemStack stack, int amount) {
-        if (amount <= 0) {
-            return;
-        }
-        ItemStack record = stack.copy();
-        record.setCount(amount);
-        delivered.add(record);
-    }
-
-    private static void deliver(World world, EntityPlayer player, BlockPos pos, ItemStack stack, DropDestination destination, @Nullable IWandCore materialCore, @Nullable ItemStack wand, List<ItemStack> delivered) {
-        if (stack == null || stack.isEmpty()) {
-            return;
-        }
-        if (destination == DropDestination.GROUND) {
-            Block.spawnAsEntity(world, pos, stack.copy());
-            delivered.add(stack.copy());
-            return;
-        }
-
-        ItemStack remaining = stack.copy();
-        if (destination == DropDestination.MATERIAL) {
-            remaining = moveToMaterial(materialCore, wand, player, remaining, delivered);
-            remaining = moveToInventory(player, remaining, delivered);
-        } else {
-            remaining = moveToInventory(player, remaining, delivered);
-            remaining = moveToMaterial(materialCore, wand, player, remaining, delivered);
-        }
-        if (!remaining.isEmpty()) {
-            Block.spawnAsEntity(world, pos, remaining);
-            delivered.add(remaining.copy());
-        }
-    }
-
-    private static ItemStack moveToInventory(EntityPlayer player, ItemStack stack, List<ItemStack> delivered) {
-        if (stack.isEmpty()) {
-            return stack;
-        }
-        int stored = insertIntoInventory(player, stack);
-        record(delivered, stack, stored);
-        ItemStack leftover = stack.copy();
-        leftover.setCount(stack.getCount() - stored);
-        return leftover;
-    }
-
-    private static ItemStack moveToMaterial(@Nullable IWandCore materialCore, @Nullable ItemStack wand, EntityPlayer player, ItemStack stack, List<ItemStack> delivered) {
-        if (stack.isEmpty() || materialCore == null || wand == null) {
-            return stack;
-        }
-        ItemStack leftover;
-        try {
-            leftover = materialCore.deposit(player, wand, stack);
-        } catch (RuntimeException exception) {
-            return stack;
-        }
-        if (leftover == null) {
-            leftover = ItemStack.EMPTY;
-        }
-        record(delivered, stack, stack.getCount() - leftover.getCount());
-        return leftover;
-    }
-
     @Override
     public BlockPos getPos() {
         return pos;
@@ -213,7 +137,7 @@ public final class DigOperation implements WandOperation {
 
             List<ItemStack> delivered = new ArrayList<>(drops.size());
             for (ItemStack drop : drops) {
-                deliver(world, player, pos, drop, destination, materialCore, wand, delivered);
+                DropDelivery.deliver(world, player, pos, drop, destination, materialCore, wand, delivered);
             }
             if (experience > 0) {
                 player.addExperience(experience);

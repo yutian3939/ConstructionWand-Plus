@@ -1,3 +1,4 @@
+itemGroup.constructionwandlegacy=Construction Wand
 item.constructionwandlegacy.stone_wand.name=Stone Wand
 item.constructionwandlegacy.iron_wand.name=Iron Wand
 item.constructionwandlegacy.diamond_wand.name=Diamond Wand
@@ -81,12 +82,15 @@ constructionwandlegacy.tooltip.container_tip=Sneak+right-click a container to bi
 
 item.constructionwandlegacy.core_digging.name=Digging Wand Core
 item.constructionwandlegacy.core_storage.name=Storage Wand Core
+item.constructionwandlegacy.core_slay.name=Slay Wand Core
 constructionwandlegacy.tooltip.storage_bound=Bound to %s containers
 constructionwandlegacy.tooltip.storage_unbound=Sneak and right click a container to bind it (more than one is allowed)
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging=§2Digging Core
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging.desc=Digs blocks on the side facing you, keeps the drops and grants the experience directly (unbreakable blocks are left alone)
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage=§6Storage Core
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage.desc=Access channel to a bound container
+constructionwandlegacy.option.cores.constructionwandlegacy:core_slay=§dSlay Core
+constructionwandlegacy.option.cores.constructionwandlegacy:core_slay.desc=Left click kills any creature instantly; sneaking right click kills everything within the Manhattan slay radius. Drops, experience, fortune and auto-smelting all work like the digging core
 constructionwandlegacy.option.material_cores.constructionwandlegacy:core_storage=§6Storage Core
 constructionwandlegacy.option.material_cores.constructionwandlegacy:core_storage.desc=Builds from the bound container, digging can also store its drops there
 constructionwandlegacy.option.silk_touch=Silk Touch: 

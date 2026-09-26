@@ -21,6 +21,7 @@ public final class ClientItemEvents {
     public static void onModelRegistry(ModelRegistryEvent event) {
         registerModel(ModItems.ITEM_CORE_DIGGING);
         registerModel(ModItems.ITEM_CORE_STORAGE);
+        registerModel(ModItems.ITEM_CORE_SLAY);
         registerModel(ModItems.ITEM_UPGRADE_FORTUNE);
         registerModel(ModItems.ITEM_UPGRADE_AUTO_SMELT);
         registerModel(ModItems.ITEM_UPGRADE_FLIGHT);
