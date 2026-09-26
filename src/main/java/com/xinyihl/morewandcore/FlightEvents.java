@@ -1,7 +1,7 @@
 package com.xinyihl.morewandcore;
 
 import com.xinyihl.constructionwandlegacy.Tags;
-import com.xinyihl.constructionwandlegacy.basics.WandUtil;
+import com.xinyihl.constructionwandlegacy.items.wand.ItemWand;
 import com.xinyihl.morewandcore.basics.WandUpgrades;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -16,9 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Grants creative flight while a player holds a wand with the flight upgrade installed, and takes it
- * away again as soon as the wand leaves their hands. A player who loses flight mid-air is spared the
- * fall damage of that one fall.
+ * Grants creative flight while a player carries a wand with the flight upgrade installed anywhere in
+ * their inventory (not just in the held hand), and takes it away again as soon as the wand leaves
+ * them. A player who loses flight mid-air is spared the fall damage of that one fall.
  */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class FlightEvents {
@@ -66,8 +66,7 @@ public final class FlightEvents {
         if (serverPlayer.capabilities.isCreativeMode || serverPlayer.isSpectator()) {
             return;
         }
-        ItemStack wand = WandUtil.holdingWand(serverPlayer);
-        boolean flight = !wand.isEmpty() && WandUpgrades.hasFlight(wand);
+        boolean flight = carriesFlightWand(serverPlayer);
         if (flight) {
             if (!serverPlayer.capabilities.allowFlying) {
                 serverPlayer.capabilities.allowFlying = true;
@@ -80,6 +79,29 @@ public final class FlightEvents {
             // The player drops out of the air now; spare them the fall damage of this one fall.
             FALL_PROTECTED.add(serverPlayer.getUniqueID());
         }
+    }
+
+    /**
+     * @return whether the player carries a wand with the flight upgrade anywhere in their inventory,
+     * not just in the hand that is currently held. Armour can never hold a wand, so only the main
+     * inventory and the off hand are checked.
+     */
+    private static boolean carriesFlightWand(EntityPlayer player) {
+        for (ItemStack stack : player.inventory.mainInventory) {
+            if (isFlightWand(stack)) {
+                return true;
+            }
+        }
+        for (ItemStack stack : player.inventory.offHandInventory) {
+            if (isFlightWand(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isFlightWand(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof ItemWand && WandUpgrades.hasFlight(stack);
     }
 
     @SubscribeEvent

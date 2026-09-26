@@ -59,7 +59,18 @@ public final class ContainerBindingEvents {
             return;
         }
 
-        BoundContainerSourceFactory.BindResult result = BoundContainerSourceFactory.storeBinding(wand, event.getPos(), player.world.provider.getDimension());
+        int dimension = player.world.provider.getDimension();
+        // Clicking a container the wand already points at takes the binding off again.
+        if (BoundContainerSourceFactory.isBound(wand, event.getPos(), dimension)) {
+            if (BoundContainerSourceFactory.removeBinding(wand, event.getPos(), dimension)) {
+                int remaining = BoundContainerSourceFactory.readBindings(wand).size();
+                player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.container_unbound", remaining), true);
+                markDirty(player);
+            }
+            return;
+        }
+
+        BoundContainerSourceFactory.BindResult result = BoundContainerSourceFactory.storeBinding(wand, event.getPos(), dimension);
         if (result == BoundContainerSourceFactory.BindResult.FAILED) {
             return;
         }
@@ -69,6 +80,10 @@ public final class ContainerBindingEvents {
         }
         int bound = BoundContainerSourceFactory.readBindings(wand).size();
         player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.storage_bound", bound), true);
+        markDirty(player);
+    }
+
+    private static void markDirty(EntityPlayer player) {
         player.inventory.markDirty();
         if (player instanceof EntityPlayerMP) {
             ((EntityPlayerMP) player).inventoryContainer.detectAndSendChanges();

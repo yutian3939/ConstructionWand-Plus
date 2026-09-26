@@ -78,13 +78,14 @@ constructionwandlegacy.option.random.no=§c否
 constructionwandlegacy.option.random.no.desc=不会随机放置方块
 
 constructionwandlegacy.tooltip.container_bound=已绑定 %s 个容器
-constructionwandlegacy.tooltip.container_tip=潜行右键容器来绑定
+constructionwandlegacy.tooltip.container_unbound=已解绑，剩余 %s 个容器
+constructionwandlegacy.tooltip.container_tip=潜行右键容器来绑定（再次右键解绑）
 
 item.constructionwandlegacy.core_digging.name=挖掘手杖核心
 item.constructionwandlegacy.core_storage.name=仓储手杖核心
 item.constructionwandlegacy.core_slay.name=秒杀手杖核心
 constructionwandlegacy.tooltip.storage_bound=已绑定 %s 个容器
-constructionwandlegacy.tooltip.storage_unbound=潜行右键容器进行绑定（可绑定多个）
+constructionwandlegacy.tooltip.storage_unbound=潜行右键容器进行绑定（可绑定多个，再次右键解绑）
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging=§2挖掘核心
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging.desc=挖掘面向你一侧的方块，保留掉落物并直接获得经验（无法破坏的方块除外）
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage=§6仓储核心

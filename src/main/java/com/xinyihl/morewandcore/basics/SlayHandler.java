@@ -2,10 +2,10 @@ package com.xinyihl.morewandcore.basics;
 
 import com.xinyihl.constructionwandlegacy.Tags;
 import com.xinyihl.constructionwandlegacy.basics.option.WandState;
+import com.xinyihl.constructionwandlegacy.config.ModConfig;
 import com.xinyihl.constructionwandlegacy.wand.upgrade.IWandCore;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityXPOrb;
@@ -15,25 +15,36 @@ import net.minecraft.item.ItemMonsterPlacer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
 import net.minecraftforge.event.entity.living.LootingLevelEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
 /**
- * The slay core's killing logic. A single kill happens synchronously on the server thread, so the
- * drops and experience orbs the victim spawns are caught through {@link EntityJoinWorldEvent} while
- * the slay context is active, rerouted to their configured destination and given to the player.
+ * The slay core's killing logic.
+ * <p>
+ * A single kill happens synchronously on the server thread, so the drops and experience orbs the
+ * victim spawns are caught through {@link EntityJoinWorldEvent} while the slay context is active,
+ * rerouted to their configured destination and given to the player.
+ * <p>
+ * Because the slay core is meant to kill things that resist damage, the kill escalates: a normal
+ * attack first, then a forced death that bypasses armour, shields, damage caps, immunity, damage
+ * events and invulnerability frames, and finally removing the entity outright.
  */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class SlayHandler {
@@ -47,6 +58,15 @@ public final class SlayHandler {
      */
     private static final Map<EntityLivingBase, EntityPlayer> PENDING_XP = new WeakHashMap<>();
 
+    /**
+     * {@code EntityLivingBase.recentlyHit}, which marks the target as "recently hit" so equipped mobs
+     * still drop their gear when the forced death path skips {@code attackEntityFrom}. The field is
+     * protected, so it is reached reflectively; both the MCP name and the SRG name are tried so the
+     * helper keeps working in a deobfuscated dev environment and in production.
+     */
+    @Nullable
+    private static final Field RECENTLY_HIT = resolveRecentlyHit();
+
     private SlayHandler() {
     }
 
@@ -54,23 +74,33 @@ public final class SlayHandler {
      * Kills one living entity instantly and routes its drops and experience to the player.
      */
     public static void slaySingle(EntityPlayer player, Entity target, ItemStack wand, WandState state) {
-        if (player.world.isRemote || !(target instanceof EntityLivingBase) || target instanceof EntityPlayer || ((EntityLivingBase) target).isDead) {
+        if (player.world.isRemote || !(target instanceof EntityLivingBase) || ((EntityLivingBase) target).isDead) {
+            return;
+        }
+        // Players are only targeted when the config allows it, and never the wielder.
+        if (target instanceof EntityPlayer && (target == player || !ModConfig.slay.affectPlayers)) {
             return;
         }
         EntityLivingBase victim = (EntityLivingBase) target;
         SlayContext ctx = new SlayContext(player, victim, wand, state);
         SLAYING.set(ctx);
+        boolean killed;
         try {
-            victim.attackEntityFrom(DamageSource.causePlayerDamage(player), Float.MAX_VALUE);
+            killed = forceKill(victim, player);
         } finally {
             SLAYING.remove();
         }
         if (ctx.experience > 0) {
             player.addExperience(ctx.experience);
         }
-        // The vanilla experience drop is deferred to onDeathUpdate (20 ticks later), so remember the
-        // victim for onLivingExperienceDrop instead of relying on the now-cleared thread local.
-        PENDING_XP.put(victim, player);
+        if (!killed) {
+            return;
+        }
+        // Only mobs drop experience through the vanilla deferred drop; players do not, so they are
+        // kept out of the pending map.
+        if (!(victim instanceof EntityPlayer)) {
+            PENDING_XP.put(victim, player);
+        }
         if (ctx.silkTouch) {
             dropSpawnEgg(ctx);
         }
@@ -85,9 +115,9 @@ public final class SlayHandler {
             return;
         }
         AxisAlignedBB box = player.getEntityBoundingBox().grow(radius);
-        List<EntityLiving> entities = world.getEntitiesWithinAABB(EntityLiving.class, box);
-        for (EntityLiving entity : entities) {
-            if (!entity.isDead && manhattanDistance(player, entity) <= radius) {
+        List<EntityLivingBase> entities = world.getEntitiesWithinAABB(EntityLivingBase.class, box);
+        for (EntityLivingBase entity : entities) {
+            if (entity != player && !entity.isDead && manhattanDistance(player, entity) <= radius) {
                 slaySingle(player, entity, wand, state);
             }
         }
@@ -97,6 +127,87 @@ public final class SlayHandler {
         return Math.abs(MathHelper.floor(a.posX) - MathHelper.floor(b.posX))
                 + Math.abs(MathHelper.floor(a.posY) - MathHelper.floor(b.posY))
                 + Math.abs(MathHelper.floor(a.posZ) - MathHelper.floor(b.posZ));
+    }
+
+    /**
+     * Kills a target that may be protected by any combination of shields, damage caps, immunity,
+     * invulnerability frames, death prevention or health locks.
+     * <p>
+     * It escalates instead of jumping straight to the most destructive option, so ordinary mobs keep
+     * their normal death message, kill credit and full drops.
+     *
+     * @return whether the target ends up dead
+     */
+    private static boolean forceKill(EntityLivingBase victim, EntityPlayer player) {
+        if (isDead(victim)) {
+            return true;
+        }
+
+        // 1) Ordinary attack. Armour, potion resistance and the normal death path all run, which is
+        //    enough for regular mobs and keeps their drops, experience and kill credit intact.
+        victim.attackEntityFrom(playerDamage(player), Float.MAX_VALUE);
+        if (isDead(victim)) {
+            return true;
+        }
+
+        // 2) Forced death: clear the health and run onDeath directly. This bypasses every
+        //    attackEntityFrom override (shields, damage caps, invulnerability, immunity) as well as
+        //    the LivingAttackEvent / LivingHurtEvent that some mods cancel.
+        DamageSource bypass = bypassDamage(player);
+        markHit(victim, bypass);
+        victim.setHealth(0.0F);
+        if (victim.getHealth() <= 0.0F) {
+            victim.onDeath(bypass);
+        }
+        if (isDead(victim)) {
+            return true;
+        }
+
+        // 3) Last resort: pull the entity out of the world, which ignores health locks and any
+        //    remaining death prevention.
+        victim.setDead();
+        return isDead(victim);
+    }
+
+    /**
+     * Marks the victim as recently hit (so equipped mobs drop their gear) and records the damage in
+     * its combat tracker (so the death message and kill attribution still make sense).
+     */
+    private static void markHit(EntityLivingBase victim, DamageSource source) {
+        if (RECENTLY_HIT != null) {
+            try {
+                RECENTLY_HIT.setInt(victim, 100);
+            } catch (IllegalAccessException ignored) {
+                // The field could not be written; the drops just lose the "recently hit" bonus.
+            }
+        }
+        victim.getCombatTracker().trackDamage(source, Float.MAX_VALUE, Float.MAX_VALUE);
+    }
+
+    private static boolean isDead(EntityLivingBase entity) {
+        return entity.isDead || entity.getHealth() <= 0.0F;
+    }
+
+    /**
+     * A plain player attack that ignores armour and potion resistance, used for the first attempt so
+     * ordinary kills keep their normal death message and kill credit.
+     */
+    private static DamageSource playerDamage(EntityPlayer player) {
+        return new EntityDamageSource("player", player)
+                .setDamageBypassesArmor()
+                .setDamageIsAbsolute()
+                .setDamageAllowedInCreativeMode();
+    }
+
+    /**
+     * A fully bypassing attack used for the forced death. The {@code infinity} damage type is the one
+     * Avaritia's own sword uses to get through its full infinity-armour immunity.
+     */
+    private static DamageSource bypassDamage(EntityPlayer player) {
+        return new EntityDamageSource("infinity", player)
+                .setDamageBypassesArmor()
+                .setDamageIsAbsolute()
+                .setDamageAllowedInCreativeMode();
     }
 
     /**
@@ -113,12 +224,43 @@ public final class SlayHandler {
         DropDelivery.deliver(ctx.world, ctx.player, new BlockPos(ctx.target.posX, ctx.target.posY, ctx.target.posZ), egg, ctx.destination, ctx.materialCore, ctx.wand, null);
     }
 
+    @Nullable
+    private static Field resolveRecentlyHit() {
+        for (String name : new String[]{"recentlyHit", "field_70718_bc"}) {
+            try {
+                Field field = EntityLivingBase.class.getDeclaredField(name);
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                // try the next known name
+            }
+        }
+        return null;
+    }
+
     @SubscribeEvent
     public static void onLootingLevel(LootingLevelEvent event) {
         SlayContext ctx = SLAYING.get();
         if (ctx != null && event.getEntityLiving() == ctx.target) {
             // The fortune upgrade acts as looting for the slay core.
             event.setLootingLevel(ctx.looting);
+        }
+    }
+
+    /**
+     * Runs after every other death handler. If a target we are killing had its death prevented (a
+     * charm of life, a second chance potion, a resurrection script, ...), the death is forced through
+     * so the slay core still kills it.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onLivingDeathLowest(LivingDeathEvent event) {
+        SlayContext ctx = SLAYING.get();
+        if (ctx == null || event.getEntityLiving() != ctx.target) {
+            return;
+        }
+        if (event.isCanceled()) {
+            event.setCanceled(false);
+            event.getEntityLiving().setHealth(0.0F);
         }
     }
 

@@ -78,13 +78,14 @@ constructionwandlegacy.option.random.no=§cNo
 constructionwandlegacy.option.random.no.desc=Don't randomize placed blocks
 
 constructionwandlegacy.tooltip.container_bound=Bound to %s containers
-constructionwandlegacy.tooltip.container_tip=Sneak+right-click a container to bind
+constructionwandlegacy.tooltip.container_unbound=Unbound, %s containers left
+constructionwandlegacy.tooltip.container_tip=Sneak+right-click a container to bind (again to unbind)
 
 item.constructionwandlegacy.core_digging.name=Digging Wand Core
 item.constructionwandlegacy.core_storage.name=Storage Wand Core
 item.constructionwandlegacy.core_slay.name=Slay Wand Core
 constructionwandlegacy.tooltip.storage_bound=Bound to %s containers
-constructionwandlegacy.tooltip.storage_unbound=Sneak and right click a container to bind it (more than one is allowed)
+constructionwandlegacy.tooltip.storage_unbound=Sneak and right click a container to bind it, again to unbind (more than one is allowed)
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging=§2Digging Core
 constructionwandlegacy.option.cores.constructionwandlegacy:core_digging.desc=Digs blocks on the side facing you, keeps the drops and grants the experience directly (unbreakable blocks are left alone)
 constructionwandlegacy.option.cores.constructionwandlegacy:core_storage=§6Storage Core

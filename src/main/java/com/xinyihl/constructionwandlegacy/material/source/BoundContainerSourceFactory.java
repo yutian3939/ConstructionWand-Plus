@@ -131,6 +131,13 @@ public final class BoundContainerSourceFactory implements MaterialSourceFactory 
     }
 
     /**
+     * @return whether that container is currently bound to the wand
+     */
+    public static boolean isBound(ItemStack wand, BlockPos pos, int dimension) {
+        return pos != null && indexOf(readBindings(wand), pos, dimension) >= 0;
+    }
+
+    /**
      * Binds {@code pos}, or refreshes it when the wand already points at that container. A new
      * container is appended, so the containers bound earlier stay ahead of it.
      */

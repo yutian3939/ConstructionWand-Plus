@@ -104,6 +104,14 @@ public abstract class ItemWand extends Item {
         if (!(state.getSelectedCore() instanceof CoreDefault)) {
             return false;
         }
+        int dimension = world.provider.getDimension();
+        // Clicking a container the wand is already bound to takes the binding off again.
+        if (BoundContainerSourceFactory.isBound(stack, pos, dimension)) {
+            if (BoundContainerSourceFactory.removeBinding(stack, pos, dimension)) {
+                player.sendStatusMessage(new TextComponentTranslation(Tags.MOD_ID + ".tooltip.container_unbound", BoundContainerSourceFactory.readBindings(stack).size()), true);
+            }
+            return true;
+        }
         TileEntity tile = world.getTileEntity(pos);
         if (tile == null) return false;
         // A container that only holds fluid is a binding as well: it is where the fluid storage setting
@@ -112,7 +120,7 @@ public abstract class ItemWand extends Item {
                 && !tile.hasCapability(CapabilityFluidHandler.FLUID_HANDLER_CAPABILITY, null)) {
             return false;
         }
-        BoundContainerSourceFactory.BindResult result = BoundContainerSourceFactory.storeBinding(stack, pos, world.provider.getDimension());
+        BoundContainerSourceFactory.BindResult result = BoundContainerSourceFactory.storeBinding(stack, pos, dimension);
         if (result == BoundContainerSourceFactory.BindResult.FAILED) {
             return false;
         }

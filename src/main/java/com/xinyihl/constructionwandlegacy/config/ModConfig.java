@@ -98,6 +98,9 @@ public final class ModConfig {
     }
 
     public static final class Slay {
+        @Config.Comment("Whether the slay core may kill players as well. The wielder is never targeted.")
+        public boolean affectPlayers = true;
+
         @Config.RangeInt(min = 1, max = 256)
         @Config.Comment("Max slay radius (Manhattan distance) of the slay core on a Stone Wand")
         public int stoneSlayRadius = 16;
