@@ -9,6 +9,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.Set;
@@ -19,6 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Grants creative flight while a player carries a wand with the flight upgrade installed anywhere in
  * their inventory (not just in the held hand), and takes it away again as soon as the wand leaves
  * them. A player who loses flight mid-air is spared the fall damage of that one fall.
+ * <p>
+ * Only flight this upgrade granted is ever taken away. Flight granted by something else (another
+ * mod, or an item such as Extra Utilities' Angel Ring, which sets {@code allowFlying} itself) is
+ * left alone, so this feature cannot break those.
  */
 @Mod.EventBusSubscriber(modid = Tags.MOD_ID)
 public final class FlightEvents {
@@ -27,6 +32,12 @@ public final class FlightEvents {
      * at zero until they touch the ground, so the fall deals no damage.
      */
     private static final Set<UUID> FALL_PROTECTED = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Players whose flight ability was granted by the flight upgrade. The ability is only taken back
+     * from them, so flight from another source is not switched off.
+     */
+    private static final Set<UUID> GRANTED_FLIGHT = ConcurrentHashMap.newKeySet();
 
     private FlightEvents() {
     }
@@ -66,19 +77,30 @@ public final class FlightEvents {
         if (serverPlayer.capabilities.isCreativeMode || serverPlayer.isSpectator()) {
             return;
         }
-        boolean flight = carriesFlightWand(serverPlayer);
-        if (flight) {
+        UUID id = serverPlayer.getUniqueID();
+        if (carriesFlightWand(serverPlayer)) {
             if (!serverPlayer.capabilities.allowFlying) {
+                // Remember the grant only when the ability was off, so flight granted elsewhere is
+                // never taken away again later.
                 serverPlayer.capabilities.allowFlying = true;
+                GRANTED_FLIGHT.add(id);
                 serverPlayer.sendPlayerAbilities();
             }
-        } else if (serverPlayer.capabilities.allowFlying) {
+        } else if (GRANTED_FLIGHT.remove(id)) {
+            // Only the flight this upgrade handed out is taken back.
             serverPlayer.capabilities.allowFlying = false;
             serverPlayer.capabilities.isFlying = false;
             serverPlayer.sendPlayerAbilities();
             // The player drops out of the air now; spare them the fall damage of this one fall.
-            FALL_PROTECTED.add(serverPlayer.getUniqueID());
+            FALL_PROTECTED.add(id);
         }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        UUID id = event.player.getUniqueID();
+        GRANTED_FLIGHT.remove(id);
+        FALL_PROTECTED.remove(id);
     }
 
     /**
