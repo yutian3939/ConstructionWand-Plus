@@ -432,6 +432,16 @@ public final class Ui
      * The background of a row: a hover highlight, or the faint stripe of every other row, so a long list
      * stays readable without drawing lines between the entries.
      */
+    /**
+     * A border of one pixel, for a plate that has to stand out without being filled in.
+     */
+    public static void outline(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+        if(width <= 2 || height <= 2) return;
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
+        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+    }
     public static void rowBackground(GuiGraphics graphics, int x, int y, int width, int height,
                                      boolean hovered, boolean striped) {
         if(hovered) {

@@ -290,14 +290,15 @@ public abstract class WandRow
                         && mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT;
 
                 // Every entry carries a plate. It lights up under the mouse, and the picked one is drawn
-                // brighter and ringed in the colour of its core, the same colour its name has.
+                // brighter and ringed in the colour of its core: a border of one pixel, drawn after the
+                // plate, so the plate inside stays readable instead of being drowned by the colour.
+                Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT,
+                        entry.selected() ? 0x2EFFFFFF : hovered ? 0x3CFFFFFF : 0x12FFFFFF);
                 if(entry.selected()) {
-                    Ui.rounded(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2, entry.color());
-                    Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT, 0x2EFFFFFF);
+                    Ui.outline(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2, entry.color());
                 }
-                else {
-                    Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT,
-                            hovered ? Ui.ROW_HOVER : 0x12FFFFFF);
+                else if(hovered) {
+                    Ui.outline(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2, 0x66FFFFFF);
                 }
                 Ui.text(graphics, font, trim(font, entry.label(), columnWidth() - 12), x + 18, entryY + 6,
                         entry.selected() || hovered ? Ui.OK : Ui.TEXT);
