@@ -28,6 +28,21 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：解除“附魔能力受限”（2.16.63）
+
+界面上的「附魔能力受限」= `apothic_enchanting:max_eterna`（最大位阶属性）把你的位阶夹住了：
+`EnchantmentTableStats.eterna(Player)` 里是 `Math.min(this.eterna, player.getAttributeValue(MAX_ETERNA))`。
+世界层级没真正解锁时，这个属性上不去，于是固定 100 位阶会被夹到更低值（“刚刚还可以”大概是那一次层级加成刚好生效）。
+
+现在固定时（以及每次写回表格数值前）会把这个属性的**基础值**抬到不低于固定位阶：
+
+```java
+var attribute = player.getAttribute(Ench.Attributes.MAX_ETERNA);
+if (attribute != null && attribute.getBaseValue() < rank) attribute.setBaseValue(rank);
+```
+
+层级加成是 modifier，抬基础值不会破坏它的算法，只是保证固定值不再被削。
+
 ## 神化核心：种子改用玩家自己的附魔种子（2.16.62）
 
 2.16.61 里我用 `enchantmentSeed + 1` 让报价“前进”，这不合适：

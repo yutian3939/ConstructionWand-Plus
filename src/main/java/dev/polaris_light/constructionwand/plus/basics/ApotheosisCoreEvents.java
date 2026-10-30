@@ -77,6 +77,9 @@ public final class ApotheosisCoreEvents
             event.setCancellationResult(InteractionResult.SUCCESS);
 
             InfuserBridge.setRank(touched, event.getPos(), ApotheosisLevels.eterna(wand));
+            if(player instanceof ServerPlayer limitPlayer) {
+                ApotheosisBridge.raiseRankLimit(limitPlayer, ApotheosisLevels.eterna(wand));
+            }
             if(player instanceof ServerPlayer serverPlayer) {
                 if(!((ServerLevel) touched).mayInteract(player, event.getPos())) return;
                 ApotheosisBridge.applyTier(serverPlayer, ApotheosisLevels.tier(wand));
@@ -121,6 +124,7 @@ public final class ApotheosisCoreEvents
 
         pins.pin(key, rank, quanta, arcana);
         ApotheosisBridge.applyTier(player, tier);
+        ApotheosisBridge.raiseRankLimit(player, rank);
 
         level.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
         level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 1.2D, pos.getZ() + 0.5D,
@@ -159,6 +163,7 @@ public final class ApotheosisCoreEvents
                 continue;
             }
 
+            ApotheosisBridge.raiseRankLimit(player, pinned[0]);
             EnchantmentTableStats stats = ApotheosisBridge.statsFor(level, pos, pinned[0], pinned[1], pinned[2]);
 
             // The table recomputes its own numbers whenever the item in its slot changes, and it tells the

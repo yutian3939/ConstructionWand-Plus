@@ -14,6 +14,7 @@ import dev.shadowsoffire.apotheosis.tiers.WorldTier;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentHelper;
 import net.minecraft.world.item.ItemStack;
+import dev.shadowsoffire.apothic_enchanting.Ench;
 import dev.shadowsoffire.apothic_enchanting.payloads.StatsPayload;
 import dev.shadowsoffire.apothic_enchanting.table.EnchantmentTableStats;
 import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
@@ -106,6 +107,18 @@ public final class ApotheosisBridge
     }
 
     /**
+     * Raises the highest rank the player may use, so a pinned rank is not cut down by the attribute a world
+     * tier gives. Apotheosis shows that cut as "enchantment power limited" on the table screen.
+     */
+    public static void raiseRankLimit(ServerPlayer player, int rank) {
+        var attribute = player.getAttribute(Ench.Attributes.MAX_ETERNA);
+        if(attribute == null) return;
+        if(attribute.getBaseValue() < rank) attribute.setBaseValue(rank);
+    }
+
+    /**
+     * @return the world tier the player has right now, as the name the wand shows
+     */    /**
      * @return the world tier the player has right now, as the name the wand shows
      */
     public static String currentTierName(ServerPlayer player) {
