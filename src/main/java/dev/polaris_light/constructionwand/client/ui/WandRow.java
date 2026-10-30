@@ -5,6 +5,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
@@ -46,8 +47,23 @@ public abstract class WandRow
 
     public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
         hovered = contains(mouseX, mouseY) && enabled();
-        Ui.rowBackground(graphics, x, y, width, height(), hovered, striped());
+        if(background()) Ui.rowBackground(graphics, x, y, width, height(), hovered, striped());
         renderRow(graphics, font, enabled() ? Ui.TEXT : Ui.TEXT_OFF);
+    }
+
+    /**
+     * @return whether the row paints the plate behind its content. A row that is a block of the page
+     * paints its own parts instead, so the whole block does not sit in one big plate.
+     */
+    protected boolean background() {
+        return true;
+    }
+
+    /**
+     * @return whether the row took the wheel, which the screen asks before it scrolls the page
+     */
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        return false;
     }
 
     protected abstract void renderRow(GuiGraphics graphics, Font font, int labelColor);
@@ -128,9 +144,9 @@ public abstract class WandRow
      * A block of the page split in two, with a divider between them: the entries to pick from on the left,
      * the description of what is picked on the right.
      * <p>
-     * Every entry is a row of its own with its own background, so a list of cores reads as a list of
-     * buttons instead of one slab of text; the picked one is drawn with the accent colour. The block grows
-     * with the number of entries and the page scrolls it like any other content.
+     * The two halves are independent: the left one is a list of its own with a fixed height, scrolled by its
+     * own bar just left of the divider, so a wand with many cores does not push the description around. Every
+     * entry is a plate of its own, and the picked one is drawn brighter than the rest.
      */
     public static class TwoColumn extends WandRow
     {
@@ -144,10 +160,15 @@ public abstract class WandRow
         private static final int ENTRY_HEIGHT = 20;
         private static final int ENTRY_GAP = 4;
         private static final int TEXT_LINE = 10;
+        /** How many entries the left list shows before it starts scrolling on its own. */
+        private static final int VISIBLE_ENTRIES = 4;
 
         private final List<Entry> entries;
         private final Component description;
         private final IntConsumer onSelect;
+
+        private int leftScroll;
+        private boolean scrolledToSelection;
 
         public TwoColumn(List<Entry> entries, Component description, IntConsumer onSelect) {
             this.entries = entries;
@@ -175,30 +196,68 @@ public abstract class WandRow
             return font.split(description, descriptionWidth());
         }
 
+        private int lineStep() {
+            return ENTRY_HEIGHT + ENTRY_GAP;
+        }
+
         private int listHeight() {
             return entries.size() * ENTRY_HEIGHT + Math.max(0, entries.size() - 1) * ENTRY_GAP;
+        }
+
+        private int viewport() {
+            int rows = Math.min(entries.size(), VISIBLE_ENTRIES);
+            return Math.max(ENTRY_HEIGHT, rows * ENTRY_HEIGHT + Math.max(0, rows - 1) * ENTRY_GAP);
+        }
+
+        private int maxScroll() {
+            return Math.max(0, listHeight() - viewport());
         }
 
         @Override
         public int height() {
             Font font = Minecraft.getInstance().font;
-            return Math.max(listHeight(), descriptionLines(font).size() * TEXT_LINE) + 8;
+            return Math.max(viewport(), descriptionLines(font).size() * TEXT_LINE) + 8;
+        }
+
+        @Override
+        protected boolean background() {
+            return false;
         }
 
         @Override
         protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
             int top = y + 4;
+            if(!scrolledToSelection) {
+                // Open the list on the entry in use, so the picked one is not hidden below the window.
+                scrolledToSelection = true;
+                for(int index = 0; index < entries.size(); index++) {
+                    if(!entries.get(index).selected()) continue;
+                    leftScroll = Mth.clamp(index * lineStep() + ENTRY_HEIGHT - viewport(), 0, maxScroll());
+                }
+            }
+            leftScroll = Math.min(leftScroll, maxScroll());
+
+            // The list has a window of its own: entries scroll inside it, the description does not move.
+            graphics.enableScissor(x + 10, top, dividerX() - 6, top + viewport());
             for(int index = 0; index < entries.size(); index++) {
                 Entry entry = entries.get(index);
-                int entryY = top + index * (ENTRY_HEIGHT + ENTRY_GAP);
-                Ui.rowBackground(graphics, x + 12, entryY, columnWidth(), ENTRY_HEIGHT, false, index % 2 == 1);
+                int entryY = top + index * lineStep() - leftScroll;
+                if(entryY + ENTRY_HEIGHT < top || entryY > top + viewport()) continue;
+
+                // Every entry carries a plate; the picked one is drawn brighter than the rest.
+                Ui.rounded(graphics, x + 12, entryY, columnWidth(), ENTRY_HEIGHT,
+                        entry.selected() ? 0x2EFFFFFF : 0x12FFFFFF);
                 Ui.text(graphics, font, trim(font, entry.label(), columnWidth() - 12), x + 18, entryY + 6,
                         entry.selected() ? Ui.OK : Ui.TEXT);
             }
+            graphics.disableScissor();
+
+            if(maxScroll() > 0) {
+                Ui.scrollBar(graphics, dividerX() - 6, top, viewport(), listHeight(), viewport(), leftScroll);
+            }
 
             // The divider that keeps the two columns apart.
-            int dividerTop = y + 2;
-            Ui.rounded(graphics, dividerX(), dividerTop, 1, height() - 4, Ui.DIVIDER);
+            Ui.rounded(graphics, dividerX(), y + 2, 1, height() - 4, Ui.DIVIDER);
 
             int descriptionTop = y + 4;
             for(FormattedCharSequence line : descriptionLines(font)) {
@@ -208,16 +267,32 @@ public abstract class WandRow
         }
 
         @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+            if(maxScroll() <= 0) return false;
+            if(mouseX < x + 10 || mouseX >= dividerX() - 6) return false;
+            if(mouseY < y + 4 || mouseY > y + 4 + viewport()) return false;
+
+            int next = Mth.clamp(leftScroll - (int) Math.round(delta * lineStep()), 0, maxScroll());
+            if(next == leftScroll) return false;
+            leftScroll = next;
+            return true;
+        }
+
+        @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if(button != 0 || !contains(mouseX, mouseY)) return false;
             // Only the left column is a list, the right one is the description.
             if(mouseX >= dividerX()) return false;
 
-            int index = (int) ((mouseY - (y + 4)) / (ENTRY_HEIGHT + ENTRY_GAP));
+            int offsetY = (int) (mouseY - (y + 4)) + leftScroll;
+            if(offsetY < 0) return false;
+
+            int index = offsetY / lineStep();
             if(index < 0 || index >= entries.size()) return false;
             // A click in the gap between two entries belongs to neither of them.
-            int offset = (int) ((mouseY - (y + 4)) % (ENTRY_HEIGHT + ENTRY_GAP));
-            if(offset > ENTRY_HEIGHT) return false;
+            if(offsetY % lineStep() > ENTRY_HEIGHT) return false;
+            // A click below the window is outside the list that is drawn.
+            if(mouseY > y + 4 + viewport()) return false;
 
             onSelect.accept(index);
             return true;

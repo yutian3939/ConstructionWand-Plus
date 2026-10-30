@@ -28,6 +28,18 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心页：两栏互相独立（2.16.37）
+
+按标注继续修：
+
+- **第一行图标回来了**：`selectedCoreRow` 现在传 `coreIcon(option.get())`，`行为核心` 左边显示当前核心的图标，右侧值框照旧、无箭头；
+- **两栏完全独立**：左栏是一个固定高度的列表窗口（默认显示 4 条），**自己的滚动条画在分割线左侧**（`Ui.scrollBar`），
+  鼠标滚轮在左栏内只滚左栏（`WandRow.mouseScrolled` → 屏幕先问行、再滚整页），右栏描述不随列表滚动；
+- **去掉整块的大圆角灰底**：`WandRow.TwoColumn.background()` 返回 `false`，不再画整片底板；
+- **每个核心都有自己的圆角底**（`0x12FFFFFF`），**选中的更亮**（`0x2EFFFFFF` + `Ui.OK` 文字），不再是隔行条纹；
+- 列表打开时自动滚到当前选中的核心，避免选中的那条藏在窗口下方；
+- 截图：`docs/wand-screen-cores.png`。
+
 ## 核心页：第一行原样保留值框、下面左右两栏列表（2.16.36）
 
 - **第一行与原来一模一样**：`行为核心` + 右侧**值框**里显示当前核心（`WandRow.Cycle` 的 `arrows=false` 只画框、不画 `‹ ›`），

@@ -382,6 +382,11 @@ public class ScreenWand extends Screen
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if(!overContent(mouseX, mouseY)) return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
 
+        // A row that scrolls on its own (the core list) takes the wheel before the page does.
+        for(WandRow row : rows) {
+            if(row.mouseScrolled(mouseX, mouseY, scrollY)) return true;
+        }
+
         int max = Math.max(0, contentHeight - contentHeightPixels);
         int next = Mth.clamp(scroll - (int) Math.signum(scrollY) * (WandRow.ROW_HEIGHT + ROW_GAP), 0, max);
         if(next == scroll) return false;
@@ -447,8 +452,8 @@ public class ScreenWand extends Screen
      * made sense while it was the selector, and now it is a plain reading of the slot.
      */
     private WandRow selectedCoreRow(Component label, WandUpgradesSelectable<IWandCore> option) {
-        return new WandRow.Cycle(null, label, null, coreName(option, option.get()), true, null, false, false,
-                back -> {
+        return new WandRow.Cycle(coreIcon(option.get()), label, null, coreName(option, option.get()), true,
+                null, false, false, back -> {
                 });
     }
 
