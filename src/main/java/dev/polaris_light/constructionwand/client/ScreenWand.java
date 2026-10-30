@@ -566,6 +566,9 @@ public class ScreenWand extends Screen
             own.add(apotheosisStat("option.apoth_quanta", ApotheosisLevels.quanta(wand), ApotheosisLevels::setQuanta));
             own.add(apotheosisStat("option.apoth_arcana", ApotheosisLevels.arcana(wand), ApotheosisLevels::setArcana));
             own.add(new WandRow.Paragraph(Component.empty(), text("gui.info.apotheosis_how")));
+            // Enchanting Infuser has no table stats: it only knows the rank of its shelves, so say so instead
+            // of leaving a player wondering why two of the sliders do nothing on it.
+            own.add(new WandRow.Paragraph(Component.empty(), text("gui.info.apotheosis_infuser")));
         }
         else if(action instanceof ActionTime) {
             // Both settings of the time core are picked right here, which is what replaced clicking the

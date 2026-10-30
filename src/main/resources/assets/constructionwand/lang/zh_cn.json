@@ -305,5 +305,6 @@
   "constructionwand.apoth.tier.pinnacle": "巅峰",
   "constructionwand.gui.info.apotheosis_how": "右键附魔台即可把以上数值写上去，桌面会保留这些数值一分钟",
   "constructionwand.tooltip.apotheosis_how": "右键附魔台：写入世界层级与位阶、量子化、阿卡那",
-  "constructionwand.tooltip.apotheosis_stats": "四项数值都在选项页里用滑条调整"
+  "constructionwand.tooltip.apotheosis_stats": "四项数值都在选项页里用滑条调整",
+  "constructionwand.gui.info.apotheosis_infuser": "附魔注入器只认位阶：量子化与阿卡那对它无效，右键后它的位阶被设为你设定的值"
 }

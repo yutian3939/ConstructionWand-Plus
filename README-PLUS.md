@@ -28,6 +28,27 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：接入附魔注入器（2.16.51）
+
+Enchanting Infuser 的两个注入器没有“附魔台属性”，它的力量来自四周书架，而且是**通过它自己的静态 `EnchantingBehavior` 询问**的。
+所以这一轮不写方块数据，而是接管那个静态：
+
+- `InfuserBridge`（唯一引用 `fuzs.enchantinginfuser.*` 的类，只有 mod 存在时才会被类加载）：
+  - 右键注入器时记下 `GlobalPos → 位阶`（`setRank`），并安装包装后的行为；
+  - `Ranked implements EnchantingBehavior`，除两个方法外全部转交给原来那一个：
+    - `getEnchantmentPower(shelf, …)`：如果这个书架属于被写入过的注入器，返回 `位阶 / 该注入器书架数`，于是**书架总和恰好等于你设定的位阶**（不是叠加）；
+    - `getEnchantmentPowerLimitScale(…)`：返回 `max(原值, 位阶 / 15)`，保证 100 位阶不会被原来的上限削掉。
+- **递归防护**：注入器的 `isValidBookShelf` 内部也会调用 `EnchantingBehavior.get().getEnchantmentPower(...)`，包装后就会自己问自己。
+  因此加了一个 `ThreadLocal` 守卫：包装里调用 `isValidBookShelf` 时一律走原值，那次询问不会再进入我们的计算。
+- **安装时机**：注入器会在配置重载时用 `EnchantingBehavior.set(...)` 覆盖回自己的实现，而它没有事件可挂。
+  所以两边各加一次“廉价重装”：服务端 `ServerTickEvent`、客户端 `ApotheosisClientEvents`（`ClientTickEvent.Post`）里做
+  `if(EnchantingBehavior.get() != installed) 重新包装`，只是字段比较，开销可忽略。
+- 选项页末尾增加一行说明：**注入器只认位阶**，量子化/阿卡那对它无效（这是它的模型决定的，不是我们没做）。
+- 依赖：`maven.modrinth:enchanting-infuser:v21.1.4-1.21.1-NeoForge` + `maven.modrinth:puzzles-lib:21.1.66`（compileOnly）。
+
+**验证**：`gradlew build` 通过（544KB）；`gradlew runServer`（无这三个 mod 的环境）→ `Done (0.823s)`、1306 配方、无 `NoClassDefFoundError`
+——说明没有安装依赖时，`InfuserBridge` 完全不会被类加载。
+
 ## 新核心：神化核心（2.16.50）
 
 与 **Apotheosis 1.21**（世界层级、宝石粉）和 **Apothic Enchanting 1.21**（附魔台、位阶/量子化/阿卡那）联动的行为核心。

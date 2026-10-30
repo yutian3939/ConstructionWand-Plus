@@ -12,6 +12,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.fml.ModList;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -20,6 +21,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.items.wand.ItemWand;
 import dev.polaris_light.constructionwand.plus.compat.apotheosis.ApotheosisBridge;
+import dev.polaris_light.constructionwand.plus.compat.enchantinginfuser.InfuserBridge;
 
 /**
  * The interaction of the apotheosis core: a right click on an enchanting table writes the world tier and the
@@ -56,9 +58,23 @@ public final class ApotheosisCoreEvents
         ItemStack wand = player.getItemInHand(event.getHand());
         if(!ItemWand.isApotheosisCore(wand)) return;
 
-        if(!(event.getLevel() instanceof ServerLevel level)) return;
-        BlockState state = level.getBlockState(event.getPos());
-        if(!ApotheosisBridge.isTable(state)) return;
+        Level touched = event.getLevel();
+        BlockState state = touched.getBlockState(event.getPos());
+
+        // An infuser of Enchanting Infuser has no table to write onto: it is told a rank instead, which its own
+        // power calculation then hands out instead of the shelves. It is a global behaviour, so the tick of
+        // both sides keeps it in place while the mod can replace it.
+        if(!ApotheosisBridge.isTable(state)) {
+            if(hasInfuser() && InfuserBridge.isInfuser(state)) {
+                InfuserBridge.setRank(touched, event.getPos(), ApotheosisLevels.eterna(wand));
+                if(player instanceof ServerPlayer serverPlayer) {
+                    ApotheosisBridge.applyTier(serverPlayer, ApotheosisLevels.tier(wand));
+                }
+            }
+            return;
+        }
+
+        if(!(touched instanceof ServerLevel level)) return;
         if(!(player instanceof ServerPlayer serverPlayer)) return;
         if(!level.mayInteract(player, event.getPos())) return;
 
@@ -72,6 +88,8 @@ public final class ApotheosisCoreEvents
 
     @SubscribeEvent
     public static void onServerTick(ServerTickEvent.Post event) {
+        // The infuser behaviour is a single static of its mod, so it is put back whenever the mod replaced it.
+        if(hasInfuser()) InfuserBridge.ensureInstalled();
         if(TARGETS.isEmpty()) return;
 
         MinecraftServer server = event.getServer();
@@ -95,5 +113,14 @@ public final class ApotheosisCoreEvents
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         TARGETS.clear();
+        if(hasInfuser()) InfuserBridge.clear();
+    }
+
+    /**
+     * @return whether Enchanting Infuser is installed. Asked without touching the bridge, so that a game
+     * without the mod never has to load the classes of it.
+     */
+    private static boolean hasInfuser() {
+        return ModList.get() != null && ModList.get().isLoaded(InfuserBridge.MODID);
     }
 }

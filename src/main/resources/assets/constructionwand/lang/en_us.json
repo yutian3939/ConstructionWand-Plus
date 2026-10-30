@@ -325,5 +325,6 @@
   "constructionwand.apoth.tier.pinnacle": "Pinnacle",
   "constructionwand.gui.info.apotheosis_how": "Right click an enchanting table to write these values onto it; the table keeps them for a minute",
   "constructionwand.tooltip.apotheosis_how": "Right click an enchanting table: writes the world tier and rank, quanta and arcana",
-  "constructionwand.tooltip.apotheosis_stats": "All four are picked with sliders on the options page"
+  "constructionwand.tooltip.apotheosis_stats": "All four are picked with sliders on the options page",
+  "constructionwand.gui.info.apotheosis_infuser": "The enchanting infuser only knows rank: quanta and arcana do nothing on it, a right click sets its rank to the value here"
 }
