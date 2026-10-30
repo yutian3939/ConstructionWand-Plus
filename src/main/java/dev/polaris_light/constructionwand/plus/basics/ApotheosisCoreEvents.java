@@ -117,9 +117,11 @@ public final class ApotheosisCoreEvents
         level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 1.2D, pos.getZ() + 0.5D,
                 20, 0.4D, 0.4D, 0.4D, 0.05D);
 
+        // The message names the tier the player ended up with, not the one that was asked for: if the two ever
+        // differ, that is what the player has to see.
         tell(player, Component.translatable(ConstructionWand.MODID + ".gui.apoth.pinned",
                 rank, quanta, arcana, Component.translatable(ConstructionWand.MODID + ".apoth.tier."
-                        + ApotheosisBridge.tierName(tier))));
+                        + ApotheosisBridge.currentTierName(player))));
     }
 
     /**

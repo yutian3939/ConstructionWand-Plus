@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.EnchantingTableBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
+import dev.shadowsoffire.apotheosis.Apoth;
 import dev.shadowsoffire.apotheosis.tiers.WorldTier;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentHelper;
@@ -78,6 +79,19 @@ public final class ApotheosisBridge
         WorldTier[] tiers = WorldTier.values();
         WorldTier tier = tiers[Math.min(tiers.length - 1, Math.max(0, index))];
         WorldTier.setTier(player, tier);
+
+        // The setter bails out when the player already has that tier, and something else in Apotheosis may put
+        // the old one back. Writing the attachment as well makes the value the one the wand asked for either way.
+        if(WorldTier.getTier(player) != tier) {
+            player.setData(Apoth.Attachments.WORLD_TIER, tier);
+        }
+    }
+
+    /**
+     * @return the world tier the player has right now, as the name the wand shows
+     */
+    public static String currentTierName(ServerPlayer player) {
+        return WorldTier.getTier(player).getSerializedName();
     }
 
     /**

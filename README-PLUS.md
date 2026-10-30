@@ -28,6 +28,22 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：世界层级只在右键时写，并且写得更硬（2.16.58）
+
+按需求把 2.16.57 的“滑条即时生效”退回：世界层级**只在右键固定附魔台那一刻**写入。
+
+同时把写入改成“先正常设一次，没成再直接改存档数据”：
+
+```java
+WorldTier.setTier(player, tier);                  // 正常路径：同步客户端 + 重算层级加成
+if(WorldTier.getTier(player) != tier) {           // 被别的东西盖回去了，或者本来就是这个层级
+    player.setData(Apoth.Attachments.WORLD_TIER, tier);
+}
+```
+
+动作栏提示现在报告的是**读回来的实际层级**（`ApotheosisBridge.currentTierName(player)`），
+如果它和滑条选的不一样，就说明写入被神化自己盖回去 —— 这条信息能直接定位问题。
+
 ## 神化核心：世界层级改为滑条即时生效（2.16.57）
 
 之前世界层级只在**右键固定附魔台**时才写进玩家，所以单纯拖滑条看不到任何变化。现在 `PacketApotheosis` 的服务端处理里

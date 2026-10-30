@@ -10,7 +10,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.basics.WandUtil;
 import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
-import dev.polaris_light.constructionwand.plus.compat.apotheosis.ApotheosisBridge;
 
 /**
  * Carries the four numbers of the apotheosis core that were picked on the wand screen. They travel as plain
@@ -51,9 +50,7 @@ public record PacketApotheosis(int tier, int eterna, int quanta, int arcana) imp
                         if(ApotheosisLevels.setAll(wand, msg.tier(), msg.eterna(), msg.quanta(), msg.arcana())) {
                             player.getInventory().setChanged();
                         }
-                        // The world tier belongs to the player rather than to a table, so it is applied as soon
-                        // as the slider moves instead of waiting for the next right click.
-                        if(ApotheosisBridge.isLoaded()) ApotheosisBridge.applyTier(player, msg.tier());
+
                     })
                     .exceptionally(e -> {
                         ctx.disconnect(Component.translatable("constructionwand.networking.extra_option.failed",
