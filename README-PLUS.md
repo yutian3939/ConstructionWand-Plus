@@ -28,6 +28,26 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：把附魔台自己的“重算”也按固定值做（2.16.56）
+
+上一版只在附魔台算完之后把数值写回去，于是**三行消耗与提示**仍按书架算出来的那一套，玩家看到的就是“数值恢复了”。
+这一版直接把它那一步重做一遍：
+
+- AT 打开 `EnchantmentMenu` 的 `random / enchantmentSeed / costs / enchantClue / levelClue`；
+- `ApotheosisBridge.refreshRows(player, stats)`：用固定的位阶（经 `stats.eterna(player)`，最大位阶属性同样生效）
+  重新
+  ```java
+  menu.setStats(stats);
+  menu.random.setSeed(menu.enchantmentSeed.get());
+  for (int slot = 0; slot < 3; slot++)
+      menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
+  menu.broadcastChanges();
+  ```
+  `random` 每次都用 `enchantmentSeed` 重置种子，所以刷新是确定性的，不会每次闪出不同数字；
+- 触发点：监测槽位物品，**物品一变就 refreshRows**；其余时间每 tick `setStats`，保证点下去那一刻 roll 用的是固定值。
+
+如果这次实测仍显示书架数值，请把**三行消耗的数字**和把物品放进槽那一刻的截图发我——那样我能直接判断是哪一次重算覆盖了固定值。
+
 ## 神化核心：选项页去掉多余项、数值固定更硬（2.16.55）
 
 **多余选项**：`方向/替换/随机/锁定/匹配` 和「当前行为核心每次只作用于一个方块」是 `buildOptions()` 里给**未知核心**准备的兜底设置

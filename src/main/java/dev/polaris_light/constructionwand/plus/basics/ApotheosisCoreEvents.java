@@ -157,7 +157,16 @@ public final class ApotheosisCoreEvents
             boolean replaced = !ItemStack.matches(item, SLOT.getOrDefault(player.getUUID(), ItemStack.EMPTY));
             SLOT.put(player.getUUID(), item);
 
-            ApotheosisBridge.applyStats(player, stats);
+            if(replaced) {
+                // The item in the slot changed, so the table has just rebuilt its three rows from its own
+                // numbers: the pass is repeated here with the pinned ones, which is what the rows and the
+                // price show from now on.
+                ApotheosisBridge.refreshRows(player, stats);
+            }
+            else {
+                ApotheosisBridge.applyStats(player, stats);
+            }
+
             if(replaced || !stats.equals(SENT.get(player.getUUID()))) {
                 SENT.put(player.getUUID(), stats);
                 ApotheosisBridge.sendStats(player, stats);

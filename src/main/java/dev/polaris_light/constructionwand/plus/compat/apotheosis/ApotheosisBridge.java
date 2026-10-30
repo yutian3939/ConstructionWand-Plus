@@ -11,6 +11,8 @@ import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 import dev.shadowsoffire.apotheosis.tiers.WorldTier;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
+import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentHelper;
+import net.minecraft.world.item.ItemStack;
 import dev.shadowsoffire.apothic_enchanting.payloads.StatsPayload;
 import dev.shadowsoffire.apothic_enchanting.table.EnchantmentTableStats;
 import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
@@ -133,6 +135,31 @@ public final class ApotheosisBridge
     }
 
     /**
+     * Repeats the pass the table runs whenever the item in its slot changes, with the numbers given instead of
+     * the ones of its shelves: the cost of the three rows and their clues are computed again, so the screen and
+     * the price follow the pinned numbers rather than the room.
+     */
+    public static void refreshRows(ServerPlayer player, EnchantmentTableStats stats) {
+        if(!(player.containerMenu instanceof ApothEnchantmentMenu menu)) return;
+
+        ItemStack item = menu.getSlot(0).getItem();
+        if(item.isEmpty()) return;
+
+        float eterna = stats.eterna(player);
+        if(eterna < 1.5F) eterna = 1.5F;
+
+        menu.setStats(stats);
+        menu.random.setSeed(menu.enchantmentSeed.get());
+        for(int slot = 0; slot < 3; slot++) {
+            menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
+            menu.enchantClue[slot] = -1;
+            menu.levelClue[slot] = -1;
+        }
+        menu.broadcastChanges();
+    }
+
+    /**
+     * @return the table position behind the open menu, or {@code null} when the player has no table open. The    /**
      * @return the table position behind the open menu, or {@code null} when the player has no table open. The
      * client side menu carries no position, which is what the {@code null} of its level access tells apart.
      */
