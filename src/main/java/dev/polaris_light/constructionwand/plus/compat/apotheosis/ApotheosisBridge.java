@@ -87,16 +87,22 @@ public final class ApotheosisBridge
     public static boolean applyStats(ServerPlayer player, Level level, BlockPos pos) {
         if(!(player.containerMenu instanceof ApothEnchantmentMenu menu)) return false;
 
+        menu.setStats(statsFor(player, level, pos));
+        return true;
+    }
+
+    /**
+     * @return the stats the wand would write onto a table at that position: the rank, quanta and arcana of the
+     *         wand, and the clues, blacklist, treasure flag and stability the shelves of the table give
+     */
+    public static EnchantmentTableStats statsFor(ServerPlayer player, Level level, BlockPos pos) {
         EnchantmentTableStats base = EnchantmentTableStats.gatherStats(level, pos);
-        EnchantmentTableStats stats = new EnchantmentTableStats(
+        return new EnchantmentTableStats(
                 ApotheosisLevels.eterna(player.getMainHandItem()),
                 ApotheosisLevels.quanta(player.getMainHandItem()),
                 ApotheosisLevels.arcana(player.getMainHandItem()),
                 base.clues(), base.blacklist(), base.treasure(), base.stable());
-        menu.setStats(stats);
-        return true;
     }
-
     /**
      * @return whether the player currently has an enchanting table of Apothic Enchanting open
      */

@@ -28,6 +28,32 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：真机验证（2.16.52）
+
+把 Apotheosis 8.9.0、Apothic Enchanting 1.6.4/1.6.2、Placebo 9.9.2/9.9.4、Apothic Attributes、Enchanting Infuser 21.1.4、Puzzles Lib 21.1.66
+装进 `run/mods`（`run*` 在 `.gitignore` 里，不入库），把开发用的 `neo_version` 从 `21.1.230` 提到 **`21.1.235`**（Apotheosis 要求 `[21.1.235,)`），
+然后跑客户端探针实测，日志（原样摘录）：
+
+```
+PROBE loaded apotheosis=true apothic=true infuser=true core=true      ← 三个 mod 在时核心才注册
+PROBE wand tier=3 eterna=77 quanta=42 arcana=66                        ← 四项数值存/读正确
+PROBE world tier now SUMMIT / PINNACLE (wanted summit / pinnacle)        ← WorldTier.setTier 生效
+PROBE block=ApothEnchantingTableBlock entity=none                      ← 原版附魔台确实被换成了神化的类
+PROBE shelves give  eterna=30.0 quanta=15.0 arcana=0.0 clues=1         ← 桌面自身（书架）算出的值
+PROBE wand writes  eterna=77.0 quanta=42.0 arcana=66.0 clues=1         ← ApotheosisBridge.statsFor 的结果
+PROBE infuser rank=60 shelves=32 total power=60.0                      ← 注入器被设成 60 位阶
+PROBE infuser without rank would be 64.0                               ← 不设时是书架自然的 64
+```
+
+- **世界层级**：`HAVEN…PINNACLE` 全部通过 `WorldTier.getTier` 读回一致；
+- **桌面数值**：`statsFor(...)`（`applyStats` 用的就是它）返回的三项正好是滑条设置，`clues` 等仍取自书架；
+- **注入器**：32 个书架时总和 **60.0**，正好等于设定的位阶；不设rank时是自然的 64.0，说明是"替换"而不是"叠加"；
+- 截图 `docs/wand-screen-apotheosis.png`：选项页四个滑条（World tier = Pinnacle、Rank 77、Quanta 42、Arcana 66），主题强调色也随核心变成紫色。
+
+**未能自动化的一步**：探针世界里放的附魔台没有生成方块实体（`entity=none`），因此无法真正打开 `ApothEnchantmentMenu` 去验证 `menu.setStats(...)`。
+代码路径是：`player.containerMenu instanceof ApothEnchantmentMenu` → `menu.setStats(statsFor(...))`，公开 setter，
+并且按 tick 重复写回；真机上右键附魔台即走这条路径。
+
 ## 神化核心：接入附魔注入器（2.16.51）
 
 Enchanting Infuser 的两个注入器没有“附魔台属性”，它的力量来自四周书架，而且是**通过它自己的静态 `EnchantingBehavior` 询问**的。
