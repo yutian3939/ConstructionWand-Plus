@@ -1,3 +1,7 @@
+# Construction Wand Plus — 1.20.1 (Forge)
+
+> **说明**：本分支是 **1.20.1 / Forge** 版本。仓库的**主力版本是 [main](https://github.com/yutian3939/ConstructionWand-Plus)（1.21.1 / NeoForge）**，
+> 新功能与详细文档都以那边为准；本分支保持可用，但不一定追平最新特性。
 # Construction Wand
 
 With a Construction Wand you can place multiple blocks (up to 1024) at once, extending your build on the side you're
