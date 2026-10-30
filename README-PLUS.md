@@ -28,6 +28,23 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 储存页：ProjectE 核心显示玩家 EMC（2.16.48）
+
+`buildBindings()` 之前只处理了仓储核心与 ME 核心，ProjectE 核心落到「当前物品核心没有绑定」。现在补上第三个分支：
+
+```java
+if(isMaterialCore(PlusItems.CORE_PROJECTE)) {
+    EmcStatus emc = emcStatus();          // 读 PECapabilities 的 IKnowledgeProvider.getEmc()
+    rows.add(new WandRow.Text(text("gui.binding.projecte"), Component.literal(emc.value()), emc.color(), true, null));
+    rows.add(new WandRow.Paragraph(Component.empty(), text("gui.binding.hint_projecte")));
+    return;
+}
+```
+
+- `gui.binding.projecte` = 「EMC」，值按千分位格式化（`EmcAccess.read`），有 EMC 时用 `Ui.OK`、没有时用 `Ui.TEXT_OFF`；
+- 没有 ProjectE 知识时显示「无 ProjectE 知识」；下面一行是「以玩家 EMC 作为方块来源与掉落去向」；
+- 该分支只在物品核心是 ProjectE 核心时可达，所以 `EmcAccess`（引用 ProjectE 类型）不会在没有 ProjectE 的环境里被加载。
+
 ## 储存页：绑定信息进右栏、紧跟描述文字下面（2.16.47）
 
 - `WandRow.TwoColumn` 增加 `extra(List<WandRow>)`：右栏在描述文字下面继续排这些行（自动设 x/宽度/高度，

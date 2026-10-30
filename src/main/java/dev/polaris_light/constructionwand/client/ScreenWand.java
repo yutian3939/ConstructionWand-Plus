@@ -738,6 +738,15 @@ public class ScreenWand extends Screen
             rows.add(WandRow.Text.plain(text("gui.binding.hint_ae")));
             return;
         }
+        // The ProjectE core has no container to bind: what matters is the EMC the player has, which is where
+        // the blocks come from and where the drops go back to.
+        if(isMaterialCore(PlusItems.CORE_PROJECTE)) {
+            EmcStatus emc = emcStatus();
+            rows.add(new WandRow.Text(text("gui.binding.projecte"), Component.literal(emc.value()), emc.color(),
+                    true, null));
+            rows.add(new WandRow.Paragraph(Component.empty(), text("gui.binding.hint_projecte")));
+            return;
+        }
         rows.add(WandRow.Text.plain(text("gui.binding.none")));
     }
 
