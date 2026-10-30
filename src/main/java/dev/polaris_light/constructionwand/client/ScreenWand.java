@@ -153,16 +153,22 @@ public class ScreenWand extends Screen
 
     private void layout() {
         panelWidth = Math.min(MAX_PANEL_WIDTH, Math.max(220, width - 20));
+        applyPanelHeight(contentHeight);
+    }
 
-        // One height for every page. Sizing the window to its content left the short pages (a core with
-        // two settings) looking flat and different from the rest, and the list scrolls anyway.
+    /**
+     * Sizes the window around what the page needs, so a short page does not sit in a window with an empty
+     * bottom half. A long page grows to the tallest window and scrolls inside it.
+     *
+     * @param needed height the rows of the page take, in pixels
+     */
+    private void applyPanelHeight(int needed) {
         int rail = Tab.values().length * (TAB_HEIGHT + TAB_GAP) - TAB_GAP;
         int smallest = HEADER_HEIGHT + FOOTER_HEIGHT + 8 + rail + 4;
         int available = Math.max(smallest, height - 20);
-        // A tall window gets a tall page: four fifths of the room, never so short that a page with two
-        // settings looks flat and never so tall that it stops looking like a panel.
-        int wanted = Math.max(270, (int) (available * 0.8F));
-        panelHeight = Math.min(Math.min(MAX_PANEL_HEIGHT, wanted), available);
+
+        int wanted = HEADER_HEIGHT + FOOTER_HEIGHT + 8 + Math.max(rail + 4, needed + 4);
+        panelHeight = Math.min(Math.min(MAX_PANEL_HEIGHT, Math.max(180, wanted)), available);
 
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
@@ -188,6 +194,9 @@ public class ScreenWand extends Screen
         }
         layout();
         layoutRows();
+        int before = panelHeight;
+        applyPanelHeight(contentHeight);
+        if(panelHeight != before) layoutRows();
     }
 
     private void layoutRows() {
@@ -220,6 +229,9 @@ public class ScreenWand extends Screen
         renderThemeButton(graphics, mouseX, mouseY);
 
         layoutRows();
+        int before = panelHeight;
+        applyPanelHeight(contentHeight);
+        if(panelHeight != before) layoutRows();
         boolean overContent = overContent(mouseX, mouseY);
         int rowMouseX = overContent ? mouseX : -1;
         int rowMouseY = overContent ? mouseY : -1;
@@ -463,7 +475,8 @@ public class ScreenWand extends Screen
         for(IWandCore core : option.getUpgrades()) {
             entries.add(new WandRow.TwoColumn.Entry(coreName(option, core), core == selected));
         }
-        return new WandRow.TwoColumn(entries, translate(option.getDescTranslation()),
+        return new WandRow.TwoColumn(entries,
+                text("gui.status.description").copy().append(translate(option.getDescTranslation())),
                 index -> selectCore(option, option.getUpgrades().get(index)));
     }
 
