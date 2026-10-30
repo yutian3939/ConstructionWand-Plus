@@ -237,10 +237,13 @@ public final class ApotheosisBridge
         Registry<Enchantment> registry = player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
         for(int slot = 0; slot < 3; slot++) {
             if(slot == 2 && itemMatch != null && valueMatch == null) {
-                // An infusion item whose recipe the pinned numbers do not satisfy: no row is offered at all.
-                menu.costs[slot] = 0;
+                // An infusion item whose recipe the pinned numbers do not satisfy. The row keeps the price the
+                // recipe would ask for, so it is still there to be looked at, but it has no offer behind it:
+                // without a clue the screen disables it and says the conditions of the infusion are not met.
+                menu.costs[slot] = Math.max((int) Math.ceil(itemMatch.getRequirements().eterna()), 3);
                 menu.enchantClue[slot] = -1;
                 menu.levelClue[slot] = -1;
+                PacketDistributor.sendToPlayer(player, new CluePayload(slot, List.of(), false));
                 continue;
             }
 
