@@ -28,6 +28,34 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：右键改为「取消点击 + 固定数值」（2.16.53）
+
+按需求改掉上一版的“不取消点击、按 tick 临时写回”：
+
+- **右键附魔台 = 取消点击**（`setCanceled(true)` + `useBlock/useItem = FALSE` + `Result.SUCCESS`），桌面不会打开，
+  和秒杀/时间核心接管点击的做法一致；客户端同样取消，所以不会预测性打开界面；
+- **数值被固定在那个方块上**：新增 `ApotheosisPins`（`SavedData`，存于主世界 `constructionwand_apotheosis_pins`），
+  记录 `GlobalPos → {位阶, 量子化, 阿卡那}`，**随存档持久化**，对所有玩家生效；
+- **世界层级同时应用**：`WorldTier.setTier(player, tier)`；
+- **之后打开这座台子**（空手或别的物品右键）时，每 4 tick 检查玩家是否开着 `ApothEnchantmentMenu`：
+  用 `EnchantmentMenu.access`（新增 AT 公开该字段）取出菜单位置 → 有固定值就 `menu.setStats(固定值)` 并把
+  `StatsPayload` 发给客户端（只在数值变化时发，避免刷包），因此玩家往槽里放物品触发 `gatherStats()` 覆盖后，
+  下一次检查又会写回固定值；
+- **潜行右键**取消该台子的固定，并给出动作栏提示；
+- 反馈：固定时播放附魔台音效 + 附魔粒子 + 动作栏「已固定：位阶 88、量子化 33、阿卡那 55，世界层级 攀升」。
+- 注入器不受影响：它有自己的界面，右键仍然打开，只是把位阶写进去。
+
+**真机验证**（探针直接 post 真实的 `PlayerInteractEvent.RightClickBlock`）：
+
+```
+PROBE cancelled=true useBlock=FALSE result=SUCCESS pins=1 pinned=88/33/55   ← 点击被吃掉，数值固定成功
+PROBE world tier now ASCENT                                                ← 同时应用了世界层级
+PROBE saved nbt=1 reloaded=88/33/55                                        ← 固定值随存档持久化
+PROBE after sneak cancelled=true pins=0                                     ← 潜行右键取消固定
+```
+
+`gradlew build` 通过（548KB）；`gradlew runServer`（装有六个 mod）→ `1459 配方`、`Done (0.758s)`、无异常。
+
 ## 神化核心：真机验证（2.16.52）
 
 把 Apotheosis 8.9.0、Apothic Enchanting 1.6.4/1.6.2、Placebo 9.9.2/9.9.4、Apothic Attributes、Enchanting Infuser 21.1.4、Puzzles Lib 21.1.66

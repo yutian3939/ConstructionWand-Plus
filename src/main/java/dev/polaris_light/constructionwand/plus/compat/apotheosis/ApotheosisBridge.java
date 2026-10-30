@@ -3,12 +3,15 @@ package dev.polaris_light.constructionwand.plus.compat.apotheosis;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.EnchantingTableBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.network.PacketDistributor;
 import dev.shadowsoffire.apotheosis.tiers.WorldTier;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
+import dev.shadowsoffire.apothic_enchanting.payloads.StatsPayload;
 import dev.shadowsoffire.apothic_enchanting.table.EnchantmentTableStats;
 import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
 
@@ -96,12 +99,47 @@ public final class ApotheosisBridge
      *         wand, and the clues, blacklist, treasure flag and stability the shelves of the table give
      */
     public static EnchantmentTableStats statsFor(ServerPlayer player, Level level, BlockPos pos) {
-        EnchantmentTableStats base = EnchantmentTableStats.gatherStats(level, pos);
-        return new EnchantmentTableStats(
-                ApotheosisLevels.eterna(player.getMainHandItem()),
+        return statsFor(level, pos, ApotheosisLevels.eterna(player.getMainHandItem()),
                 ApotheosisLevels.quanta(player.getMainHandItem()),
-                ApotheosisLevels.arcana(player.getMainHandItem()),
+                ApotheosisLevels.arcana(player.getMainHandItem()));
+    }
+
+    /**
+     * @return the stats a table at that position would run with, given the three numbers to use
+     */
+    public static EnchantmentTableStats statsFor(Level level, BlockPos pos, int rank, int quanta, int arcana) {
+        EnchantmentTableStats base = EnchantmentTableStats.gatherStats(level, pos);
+        return new EnchantmentTableStats(rank, quanta, arcana,
                 base.clues(), base.blacklist(), base.treasure(), base.stable());
+    }
+
+    /**
+     * Writes ready made stats onto the open table.
+     *
+     * @return whether the player had a table of Apothic Enchanting open
+     */
+    public static boolean applyStats(ServerPlayer player, EnchantmentTableStats stats) {
+        if(!(player.containerMenu instanceof ApothEnchantmentMenu menu)) return false;
+        menu.setStats(stats);
+        return true;
+    }
+
+    /**
+     * Sends the numbers to the player, so the cost the screen shows matches what the server will roll with.
+     * The table itself does this when it recomputes its stats; writing them later has to say so as well.
+     */
+    public static void sendStats(ServerPlayer player, EnchantmentTableStats stats) {
+        PacketDistributor.sendToPlayer(player, new StatsPayload(stats));
+    }
+
+    /**
+     * @return the table position behind the open menu, or {@code null} when the player has no table open. The
+     * client side menu carries no position, which is what the {@code null} of its level access tells apart.
+     */
+    @Nullable
+    public static BlockPos menuPos(ServerPlayer player) {
+        if(!(player.containerMenu instanceof EnchantmentMenu menu)) return null;
+        return menu.access.evaluate((level, pos) -> pos, null);
     }
     /**
      * @return whether the player currently has an enchanting table of Apothic Enchanting open

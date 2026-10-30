@@ -309,7 +309,7 @@
   "constructionwand.networking.server_rules.failed": "Failed to read the server wand rules: %s",
   "item.constructionwand.core_apotheosis": "Apotheosis Core",
   "constructionwand.option.cores.constructionwand:core_apotheosis": "§dApotheosis Core",
-  "constructionwand.option.cores.constructionwand:core_apotheosis.desc": "Right click an enchanting table to write the world tier and the rank, quanta and arcana values of this wand onto it; the vanilla table and the apothic one both work",
+  "constructionwand.option.cores.constructionwand:core_apotheosis.desc": "Right click an enchanting table to pin its rank, quanta and arcana and to apply the world tier; the vanilla table and the apothic one both work",
   "constructionwand.option.apoth_tier": "World tier",
   "constructionwand.option.apoth_tier.desc": "The world tier of the player that a right click writes with the Apotheosis tiers, HAVEN to PINNACLE",
   "constructionwand.option.apoth_eterna": "Rank",
@@ -323,8 +323,11 @@
   "constructionwand.apoth.tier.ascent": "Ascent",
   "constructionwand.apoth.tier.summit": "Summit",
   "constructionwand.apoth.tier.pinnacle": "Pinnacle",
-  "constructionwand.gui.info.apotheosis_how": "Right click an enchanting table to write these values onto it; the table keeps them for a minute",
-  "constructionwand.tooltip.apotheosis_how": "Right click an enchanting table: writes the world tier and rank, quanta and arcana",
+  "constructionwand.gui.info.apotheosis_how": "Right click an enchanting table: pins its rank, quanta and arcana and applies the world tier to you; sneak right click removes the pin",
+  "constructionwand.tooltip.apotheosis_how": "Right click an enchanting table: pins its numbers and applies the world tier (sneak right click to remove)",
   "constructionwand.tooltip.apotheosis_stats": "All four are picked with sliders on the options page",
-  "constructionwand.gui.info.apotheosis_infuser": "The enchanting infuser only knows rank: quanta and arcana do nothing on it, a right click sets its rank to the value here"
+  "constructionwand.gui.info.apotheosis_infuser": "The enchanting infuser only knows rank: quanta and arcana do nothing on it, a right click sets its rank to the value here",
+  "constructionwand.gui.apoth.pinned": "Pinned: rank %s, quanta %s, arcana %s, world tier %s",
+  "constructionwand.gui.apoth.unpinned": "The pinned numbers of this table were removed",
+  "constructionwand.gui.apoth.not_pinned": "This table had no pinned numbers"
 }

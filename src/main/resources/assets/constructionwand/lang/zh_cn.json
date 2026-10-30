@@ -289,7 +289,7 @@
   "constructionwand.networking.server_rules.failed": "读取服务端手杖规则失败：%s",
   "item.constructionwand.core_apotheosis": "神化手杖核心",
   "constructionwand.option.cores.constructionwand:core_apotheosis": "§d神化核心",
-  "constructionwand.option.cores.constructionwand:core_apotheosis.desc": "右键附魔台，把界面里的世界层级与位阶、量子化、阿卡那写上去；原版附魔台、神化的附魔台都有效",
+  "constructionwand.option.cores.constructionwand:core_apotheosis.desc": "右键附魔台固定其位阶、量子化、阿卡那，并应用世界层级；原版附魔台与神化的附魔台都有效",
   "constructionwand.option.apoth_tier": "世界层级",
   "constructionwand.option.apoth_tier.desc": "右键附魔台时写入玩家的世界层级（神化 HAVEN～PINNACLE）",
   "constructionwand.option.apoth_eterna": "位阶",
@@ -303,8 +303,11 @@
   "constructionwand.apoth.tier.ascent": "攀升",
   "constructionwand.apoth.tier.summit": "峰顶",
   "constructionwand.apoth.tier.pinnacle": "巅峰",
-  "constructionwand.gui.info.apotheosis_how": "右键附魔台即可把以上数值写上去，桌面会保留这些数值一分钟",
-  "constructionwand.tooltip.apotheosis_how": "右键附魔台：写入世界层级与位阶、量子化、阿卡那",
+  "constructionwand.gui.info.apotheosis_how": "右键附魔台：固定该台的位阶/量子化/阿卡那，并把世界层级应用到你自己；潜行右键取消固定",
+  "constructionwand.tooltip.apotheosis_how": "右键附魔台：固定该台的数值并应用世界层级（潜行右键取消）",
   "constructionwand.tooltip.apotheosis_stats": "四项数值都在选项页里用滑条调整",
-  "constructionwand.gui.info.apotheosis_infuser": "附魔注入器只认位阶：量子化与阿卡那对它无效，右键后它的位阶被设为你设定的值"
+  "constructionwand.gui.info.apotheosis_infuser": "附魔注入器只认位阶：量子化与阿卡那对它无效，右键后它的位阶被设为你设定的值",
+  "constructionwand.gui.apoth.pinned": "已固定：位阶 %s、量子化 %s、阿卡那 %s，世界层级 %s",
+  "constructionwand.gui.apoth.unpinned": "已取消这座附魔台的固定数值",
+  "constructionwand.gui.apoth.not_pinned": "这座附魔台本来就没有固定数值"
 }
