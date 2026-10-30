@@ -123,8 +123,11 @@ public final class ApotheosisCoreEvents
         int tier = ApotheosisLevels.tier(wand);
 
         pins.pin(key, rank, quanta, arcana);
+        ConstructionWand.LOGGER.info("[apoth] pin {} rank={} quanta={} arcana={} tier={} was {}", pos, rank,
+                quanta, arcana, tier, ApotheosisBridge.currentTierName(player));
         ApotheosisBridge.applyTier(player, tier);
         ApotheosisBridge.raiseRankLimit(player, rank);
+        ConstructionWand.LOGGER.info("[apoth] pin done, tier now {}", ApotheosisBridge.currentTierName(player));
 
         level.playSound(null, pos, SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.0F);
         level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 1.2D, pos.getZ() + 0.5D,
@@ -173,6 +176,8 @@ public final class ApotheosisCoreEvents
             boolean replaced = !ItemStack.matches(item, SLOT.getOrDefault(player.getUUID(), ItemStack.EMPTY));
             SLOT.put(player.getUUID(), item);
 
+            ConstructionWand.LOGGER.info("[apoth] refresh pos={} pinned={} eterna={} replaced={}", pos,
+                    pinned[0] + "/" + pinned[1] + "/" + pinned[2], stats.eterna(), replaced);
             if(replaced) {
                 // The item in the slot changed, so the table has just rebuilt its three rows from its own
                 // numbers: the pass is repeated here with the pinned ones, which is what the rows and the
