@@ -709,8 +709,7 @@ public class ScreenWand extends Screen
      */
     private WandRow apotheosisTier() {
         return new WandRow.Slider(text("option.apoth_tier"), this::apotheosisTierName,
-                0, ApotheosisLevels.TIERS - 1, ApotheosisLevels.tier(wand), true,
-                text("option.apoth_tier.desc"), value -> {
+                0, ApotheosisLevels.TIERS - 1, ApotheosisLevels.tier(wand), true, null, value -> {
             ApotheosisLevels.setTier(wand, value);
             ModMessages.sendToServer(apotheosisPacket());
             refresh();
@@ -727,7 +726,7 @@ public class ScreenWand extends Screen
      */
     private WandRow apotheosisStat(String key, int current, java.util.function.BiConsumer<ItemStack, Integer> setter) {
         return new WandRow.Slider(text(key), shown -> Component.literal(String.valueOf(shown)),
-                0, ApotheosisLevels.STAT_MAX, current, true, text(key + ".desc"), value -> {
+                0, ApotheosisLevels.STAT_MAX, current, true, null, value -> {
             setter.accept(wand, value);
             ModMessages.sendToServer(apotheosisPacket());
             refresh();
