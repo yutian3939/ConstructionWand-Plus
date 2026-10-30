@@ -28,6 +28,15 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 储存页：绑定信息进右栏、紧跟描述文字下面（2.16.47）
+
+- `WandRow.TwoColumn` 增加 `extra(List<WandRow>)`：右栏在描述文字下面继续排这些行（自动设 x/宽度/高度，
+  并把 `mouseClicked`/`mouseDragged`/`mouseReleased` 转给它们），块高度把右栏内容算进去；
+- `buildStorage()` 改为先把绑定行构建到一个局部列表，再 `corePicker(...).extra(bindings)`，绑定信息就落在描述下面；
+- `bindingRowAt()` 也扫块的 extras，所以**拖动排序仍然有效**；
+- 绑定提示语改成 `Paragraph`（会折行），不再被窄栏裁成 `contai…`；
+- 截图 `docs/wand-screen-storage.png`：`描述：…` → `Bindings: 0/8` → `Not bound` → `Sneak right click a container to bind it`，全在右栏。
+
 ## 核心列表：文字回归核心色、列表按内容收窄、储存页保留绑定区（2.16.46）
 
 - **文字颜色**：不再用 `Ui.OK` 覆盖，一律 `Ui.TEXT`，让语言文件里的 `§` 颜色码生效——建筑核心（无颜色码）显示白色，

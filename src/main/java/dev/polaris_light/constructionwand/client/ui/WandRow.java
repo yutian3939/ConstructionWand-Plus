@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntConsumer;
 
@@ -204,6 +205,8 @@ public abstract class WandRow
         private final IntConsumer onSelect;
         /** How tall the block is asked to be, so a short list still fills the page. */
         private final int fill;
+        /** Rows that belong under the description: they are laid out in the right hand column. */
+        private final List<WandRow> extras = new ArrayList<>();
 
         private int leftScroll;
         private boolean scrolledToSelection;
@@ -221,6 +224,27 @@ public abstract class WandRow
             this.description = description;
             this.fill = fill;
             this.onSelect = onSelect;
+        }
+
+        /**
+         * @param rows rows that belong under the description, such as the bindings of a storage core
+         */
+        public TwoColumn extra(List<WandRow> rows) {
+            extras.clear();
+            extras.addAll(rows);
+            return this;
+        }
+
+        public List<WandRow> extras() {
+            return extras;
+        }
+
+        private int extrasHeight() {
+            int total = 0;
+            for(WandRow row : extras) {
+                total += row.height() + 2;
+            }
+            return Math.max(0, total - 2);
         }
 
         /**
@@ -276,7 +300,9 @@ public abstract class WandRow
         @Override
         public int height() {
             Font font = Minecraft.getInstance().font;
-            return Math.max(viewport() + 2, descriptionLines(font).size() * TEXT_LINE) + 8;
+            int right = descriptionLines(font).size() * TEXT_LINE;
+            if(!extras.isEmpty()) right += 6 + extrasHeight();
+            return Math.max(viewport() + 2, right) + 8;
         }
 
         @Override
@@ -346,6 +372,32 @@ public abstract class WandRow
                 graphics.drawString(font, line, descriptionX(), descriptionTop, Ui.TEXT_DIM, false);
                 descriptionTop += TEXT_LINE;
             }
+
+            // What belongs under the description lives in this column too.
+            int extraTop = descriptionTop + 6;
+            for(WandRow extra : extras) {
+                extra.x = descriptionX();
+                extra.width = descriptionWidth();
+                extra.y = extraTop;
+                extra.render(graphics, font, mouseX, mouseY);
+                extraTop += extra.height() + 2;
+            }
+        }
+
+        @Override
+        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+            for(WandRow extra : extras) {
+                if(extra.mouseDragged(mouseX, mouseY, button, dragX, dragY)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean mouseReleased(double mouseX, double mouseY, int button) {
+            for(WandRow extra : extras) {
+                if(extra.mouseReleased(mouseX, mouseY, button)) return true;
+            }
+            return false;
         }
 
         @Override
@@ -362,6 +414,9 @@ public abstract class WandRow
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            for(WandRow extra : extras) {
+                if(extra.mouseClicked(mouseX, mouseY, button)) return true;
+            }
             if(button != 0 || !contains(mouseX, mouseY)) return false;
             // Only the left column is a list, the right one is the description.
             if(mouseX >= dividerX()) return false;

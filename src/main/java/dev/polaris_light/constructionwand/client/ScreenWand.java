@@ -438,20 +438,16 @@ public class ScreenWand extends Screen
      * to. The two belong together, a storage core without its bound containers has nothing to give.
      */
     private void buildStorage() {
-        // The bindings come last, but the list has to know how much room they need: they are built once into
-        // a scratch list to measure them, then the list is given what is left over.
-        List<WandRow> head = new ArrayList<>();
-        head.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
-        head.add(new WandRow.Divider());
-
+        // The bindings sit under the description, inside the right hand column of the block, so they are
+        // built first and handed to the block instead of the page.
         rows.clear();
         buildBindings();
-        int bindings = rowsHeight();
+        List<WandRow> bindings = new ArrayList<>(rows);
 
         rows.clear();
-        rows.addAll(head);
-        rows.add(corePicker(wandOptions.materialCores, roomLeft(bindings)));
-        buildBindings();
+        rows.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
+        rows.add(new WandRow.Divider());
+        rows.add(corePicker(wandOptions.materialCores, roomLeft(0)).extra(bindings));
     }
 
     /**
@@ -492,7 +488,7 @@ public class ScreenWand extends Screen
         return Math.max(WandRow.ROW_HEIGHT, contentHeightPixels - used - ROW_GAP - 12);
     }
 
-    private WandRow corePicker(WandUpgradesSelectable<IWandCore> option, int fill) {
+    private WandRow.TwoColumn corePicker(WandUpgradesSelectable<IWandCore> option, int fill) {
         IWandCore selected = option.get();
         List<WandRow.TwoColumn.Entry> entries = new ArrayList<>();
         for(IWandCore core : option.getUpgrades()) {
@@ -730,7 +726,7 @@ public class ScreenWand extends Screen
                             () -> removeBinding(bound)));
                 }
             }
-            rows.add(WandRow.Text.plain(text("gui.binding.hint_storage")));
+            rows.add(new WandRow.Paragraph(Component.empty(), text("gui.binding.hint_storage")));
             if(bounds.size() > 1) rows.add(WandRow.Text.plain(text("gui.hint.drag")));
             return;
         }
@@ -1087,7 +1083,16 @@ public class ScreenWand extends Screen
      */
     private int bindingRowAt(double mouseY) {
         int fallback = -1;
+        List<WandRow> candidates = new ArrayList<>();
         for(WandRow row : rows) {
+            if(row instanceof WandRow.TwoColumn block) {
+                candidates.addAll(block.extras());
+            }
+            else {
+                candidates.add(row);
+            }
+        }
+        for(WandRow row : candidates) {
             if(!(row instanceof WandRow.Binding binding)) continue;
             if(mouseY >= row.y && mouseY < row.y + row.height()) return binding.index;
             if(mouseY >= row.y) fallback = binding.index;
