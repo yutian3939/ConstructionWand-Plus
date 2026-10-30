@@ -438,10 +438,31 @@ public class ScreenWand extends Screen
      * to. The two belong together, a storage core without its bound containers has nothing to give.
      */
     private void buildStorage() {
-        rows.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
-        rows.add(new WandRow.Divider());
-        rows.add(corePicker(wandOptions.materialCores, roomLeft(0)));
+        // The bindings come last, but the list has to know how much room they need: they are built once into
+        // a scratch list to measure them, then the list is given what is left over.
+        List<WandRow> head = new ArrayList<>();
+        head.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
+        head.add(new WandRow.Divider());
+
+        rows.clear();
         buildBindings();
+        int bindings = rowsHeight();
+
+        rows.clear();
+        rows.addAll(head);
+        rows.add(corePicker(wandOptions.materialCores, roomLeft(bindings)));
+        buildBindings();
+    }
+
+    /**
+     * @return the height the rows built so far take, gaps included
+     */
+    private int rowsHeight() {
+        int total = 0;
+        for(WandRow row : rows) {
+            total += row.height() + ROW_GAP;
+        }
+        return total;
     }
 
     /**

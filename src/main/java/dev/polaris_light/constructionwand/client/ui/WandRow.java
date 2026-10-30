@@ -162,6 +162,15 @@ public abstract class WandRow
             return false;
         }
 
+        /**
+         * @return the colour of the ring around the picked entry. The colours of the cores are plain RGB, so
+         *         the alpha is added here; the core without a colour of its own is white.
+         */
+        private static int ringColor(int coreColor) {
+            if(coreColor == 0 || coreColor == -1) return 0xFFFFFFFF;
+            return 0xFF000000 | (coreColor & 0xFFFFFF);
+        }
+
         @Override
         protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
             Ui.rounded(graphics, x, y + 3, width, 1, Ui.DIVIDER);
@@ -214,8 +223,18 @@ public abstract class WandRow
             this.onSelect = onSelect;
         }
 
+        /**
+         * @return the width of the list column: as wide as the longest label needs, never more than half
+         *         of the block, so the description is not squeezed by a list of short names
+         */
         private int columnWidth() {
-            return Math.max(60, (width - 28) / 2);
+            Font font = Minecraft.getInstance().font;
+            int widest = 0;
+            for(Entry entry : entries) {
+                widest = Math.max(widest, font.width(entry.label()));
+            }
+            int half = Math.max(60, (width - 28) / 2);
+            return Math.min(half, Math.max(70, widest + 22));
         }
 
         private int dividerX() {
@@ -265,6 +284,15 @@ public abstract class WandRow
             return false;
         }
 
+        /**
+         * @return the colour of the ring around the picked entry. The colours of the cores are plain RGB, so
+         *         the alpha is added here; the core without a colour of its own is white.
+         */
+        private static int ringColor(int coreColor) {
+            if(coreColor == 0 || coreColor == -1) return 0xFFFFFFFF;
+            return 0xFF000000 | (coreColor & 0xFFFFFF);
+        }
+
         @Override
         protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
             // Two pixels above the list, so the ring of the first entry is not cut by the window edge.
@@ -296,14 +324,13 @@ public abstract class WandRow
                 // The ring of the picked entry is drawn first and its middle cleared again, so it follows the
                 // rounded corners; the plate goes on top of that. A hovered entry only gets a brighter plate.
                 if(entry.selected()) {
-                    // The colours of the cores are plain RGB, so the ring has to be given its alpha here.
                     Ui.outlineRounded(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2,
-                            Ui.fromCoreColor(entry.color()));
+                            ringColor(entry.color()));
                 }
                 Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT,
                         entry.selected() ? 0x2EFFFFFF : hovered ? 0x3CFFFFFF : 0x12FFFFFF);
                 Ui.text(graphics, font, trim(font, entry.label(), columnWidth() - 12), x + 18, entryY + 6,
-                        entry.selected() || hovered ? Ui.OK : Ui.TEXT);
+                        Ui.TEXT);
             }
             graphics.disableScissor();
 
