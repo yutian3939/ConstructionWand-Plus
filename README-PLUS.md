@@ -28,6 +28,17 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心页改为列表选择 + 储存页（2.16.34）
+
+- **核心页不再用「‹ 值 ›」循环选择**：改为 **核心列表**，每个已装的行为核心一行，点哪一行就选哪个（`selectCore` → `option.set(core)` + `PacketWandOption`），
+  当前核心在右侧显示 `Selected` 并高亮；SHIFT+左键卸下该核心（`PacketRemoveCore`）。列表下方是当前核心的完整描述（折行，不裁剪）。
+  行控件为此给 `WandRow.Cycle` 加了 `arrows` 开关：列表行不画值框和箭头，避免看起来像"继续点就能换"。
+- **物品核心与绑定页合并为「储存」页**（放在第 2 位）：页面内容 = 物品核心列表（同样点选）+ 完整描述 + 原来的绑定信息
+  （已绑定容器 `0/8`、ME 网络、EMC、绑定提示）；`Tab` 由 `CORES/OPTIONS/UPGRADES/BINDINGS` 改为 `CORES/STORAGE/OPTIONS/UPGRADES`。
+- 语言新增 `gui.tab.storage`（储存/Storage）、`gui.section.core_list`（核心列表/Core list）、`gui.section.material_list`（物品核心/Material cores）、
+  `gui.selected`（已选/Selected）、`gui.core.select_hint`（左键选用，SHIFT+左键卸下）。
+
+截图：`docs/wand-screen-cores.png`（核心列表）、`docs/wand-screen-storage.png`（储存页）。
 ## 强化时运升级（2.16.27）
 
 - **物品** `constructionwand:upgrade_super_fortune`（强化时运升级），已注册、有**自己的贴图** `textures/item/upgrade_super_fortune.png`

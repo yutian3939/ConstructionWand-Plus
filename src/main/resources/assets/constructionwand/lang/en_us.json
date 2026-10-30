@@ -210,6 +210,11 @@
 
   "constructionwand.gui.upgrades": "Upgrades",
   "constructionwand.gui.tab.cores": "Cores",
+  "constructionwand.gui.core.select_hint": "Click to use this core, shift click to uninstall it",
+  "constructionwand.gui.selected": "Selected",
+  "constructionwand.gui.section.material_list": "Material cores",
+  "constructionwand.gui.section.core_list": "Core list",
+  "constructionwand.gui.tab.storage": "Storage",
   "constructionwand.gui.tab.options": "Options",
   "constructionwand.gui.tab.upgrades": "Upgrades",
   "constructionwand.gui.tab.bindings": "Bindings",

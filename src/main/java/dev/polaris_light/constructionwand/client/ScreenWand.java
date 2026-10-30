@@ -91,9 +91,9 @@ public class ScreenWand extends Screen
     private enum Tab
     {
         CORES("cores"),
+        STORAGE("storage"),
         OPTIONS("options"),
-        UPGRADES("upgrades"),
-        BINDINGS("bindings");
+        UPGRADES("upgrades");
 
         private final String key;
 
@@ -184,7 +184,7 @@ public class ScreenWand extends Screen
             case CORES -> buildCores();
             case OPTIONS -> buildOptions();
             case UPGRADES -> buildUpgrades();
-            case BINDINGS -> buildBindings();
+            case STORAGE -> buildStorage();
         }
         layout();
         layoutRows();
@@ -421,59 +421,68 @@ public class ScreenWand extends Screen
      * not repeated here: each of them has its own page on the options tab.
      */
     private void buildCores() {
-        IWandCore behaviour = wandOptions.cores.get();
-        IWandCore material = wandOptions.materialCores.get();
-
-        rows.add(coreRow(wandOptions.cores, behaviour, text("gui.core.behaviour")));
-        rows.add(coreRow(wandOptions.materialCores, material, text("gui.core.material")));
-
-        // What the two selected cores are, in full, and where their reach comes from. A binding is made in
-        // the world and cannot be edited here, so the panel only reports it.
-        List<WandRow> status = new ArrayList<>();
-        status.add(new WandRow.Text(text("gui.status.behaviour"), coreName(wandOptions.cores, behaviour), Ui.TEXT, true, null));
-        status.add(new WandRow.Paragraph(text("gui.status.description"),
+        // The list is the selector: every installed core is a row, and clicking one selects it. Cycling
+        // through a value box needed as many clicks as the wanted core was far away in the order, which
+        // stops working once a wand carries a handful of cores.
+        rows.add(new WandRow.Header(text("gui.section.core_list")));
+        addCoreList(wandOptions.cores);
+        rows.add(new WandRow.Paragraph(text("gui.status.description"),
                 translate(wandOptions.cores.getDescTranslation())));
-        status.add(new WandRow.Text(text("gui.status.material"), coreName(wandOptions.materialCores, material), Ui.TEXT, true, null));
-        status.add(new WandRow.Paragraph(text("gui.status.description"),
-                translate(wandOptions.materialCores.getDescTranslation())));
-        if(material instanceof ItemCoreStorage) {
-            List<ContainerBinding.Bound> bounds = boundContainers();
-            int capacity = ContainerBinding.getMaxContainers();
-            Component value = Component.literal(capacity < 0 ? String.valueOf(bounds.size())
-                    : bounds.size() + "/" + capacity);
-            status.add(new WandRow.Text(text("gui.info.bound"), value, Ui.TEXT, true, null));
-        }
-        else if(material instanceof ItemCoreProjectE) {
-            EmcStatus emc = emcStatus();
-            status.add(new WandRow.Text(text("gui.info.emc"), Component.literal(emc.value()), emc.color(), true,
-                    text("gui.binding.hint_projecte")));
-        }
-        else if(material instanceof ItemCoreAE) {
-            AeBinding ae = aeBinding();
-            status.add(new WandRow.Text(text("gui.info.ae_network"), ae.value(), ae.color(), true,
-                    text("gui.binding.hint_ae")));
-        }
 
         rows.add(new WandRow.Header(text("gui.section.status")));
-        rows.addAll(status);
+        rows.add(new WandRow.Text(text("gui.status.behaviour"),
+                coreName(wandOptions.cores, wandOptions.cores.get()), Ui.TEXT, true, null));
     }
 
     /**
-     * One core of the wand: its icon, its name as the value and the description of the selected one
-     * underneath, with the removal hint when there is more than the fallback to remove.
-     * <p>
-     * The name and the description come from the option itself, which is what keeps the two core lists
-     * apart: behaviour cores live under {@code option.cores} and material cores under
-     * {@code option.material_cores}.
+     * The storage page: which material core the wand takes its blocks from, and where that core is bound
+     * to. The two belong together, a storage core without its bound containers has nothing to give.
      */
-    private WandRow coreRow(WandUpgradesSelectable<IWandCore> option,
-                            IWandCore core, Component label) {
-        // The row only shows which core is chosen. Its description is written out in full in the status
-        // section below: as a subtitle it was cut off after one line, and as a tooltip it covered the very
-        // value the player was looking at.
-        Component name = translate(option.getValueTranslation());
-        return new WandRow.Cycle(coreIcon(core), label, null, name, option.isEnabled(), null, false,
-                back -> cycleCore(option, back));
+    private void buildStorage() {
+        rows.add(new WandRow.Header(text("gui.section.material_list")));
+        addCoreList(wandOptions.materialCores);
+        rows.add(new WandRow.Paragraph(text("gui.status.description"),
+                translate(wandOptions.materialCores.getDescTranslation())));
+        buildBindings();
+    }
+
+    /**
+     * One row per installed core, the chosen one marked. A shift click uninstalls that core, the hint in the
+     * footer says so.
+     */
+    private void addCoreList(WandUpgradesSelectable<IWandCore> option) {
+        IWandCore selected = option.get();
+        for(IWandCore core : option.getUpgrades()) {
+            boolean chosen = core == selected;
+            rows.add(new WandRow.Cycle(coreIcon(core), coreName(option, core), coreDesc(option, core),
+                    chosen ? text("gui.selected") : Component.empty(), true,
+                    chosen ? null : text("gui.core.select_hint"), false, false, back -> selectCore(option, core)));
+        }
+    }
+
+    private void selectCore(WandUpgradesSelectable<IWandCore> option, IWandCore core) {
+        if(Screen.hasShiftDown()) {
+            ResourceLocation id = core == null ? null : core.getRegistryName();
+            if(id != null && !id.toString().endsWith(":default") && !id.toString().endsWith(":none")) {
+                ModMessages.sendToServer(new PacketRemoveCore(id.toString()));
+                option.removeUpgrade(core);
+                refresh();
+            }
+            return;
+        }
+        if(option.get() == core) return;
+
+        option.set(core);
+        ModMessages.sendToServer(new PacketWandOption(option, false));
+        refresh();
+    }
+
+    /**
+     * @return the description of that core, from the key the option builds its names with
+     */
+    private Component coreDesc(WandUpgradesSelectable<IWandCore> option, IWandCore core) {
+        if(core == null || core.getRegistryName() == null) return Component.empty();
+        return translate(option.getKeyTranslation() + "." + core.getRegistryName() + ".desc");
     }
 
     /**
@@ -935,7 +944,7 @@ public class ScreenWand extends Screen
             case CORES -> text("gui.hint.change").copy().append(" · ").append(text("gui.hint.core_removable"));
             case OPTIONS -> text("gui.hint.change");
             case UPGRADES -> text("upgrade.toggle_hint");
-            case BINDINGS -> isStorageCore() ? text("gui.hint.drag_remove") : text("gui.hint.world_bind");
+            case STORAGE -> isStorageCore() ? text("gui.hint.drag_remove") : text("gui.hint.world_bind");
         };
     }
 

@@ -279,9 +279,20 @@ public abstract class WandRow
         private final Component tooltip;
         private final java.util.function.Consumer<Boolean> onCycle;
         private final boolean striped;
+        private final boolean arrows;
 
         public Cycle(@Nullable ItemStack icon, Component label, @Nullable Component subtitle, Component value,
                      boolean enabled, @Nullable Component tooltip, boolean striped,
+                     java.util.function.Consumer<Boolean> onCycle) {
+            this(icon, label, subtitle, value, enabled, tooltip, striped, true, onCycle);
+        }
+
+        /**
+         * @param arrows whether the value sits in a box with the two arrows. A row that is a list entry
+         *               instead of a setting keeps its value plain, so nothing suggests stepping through it.
+         */
+        public Cycle(@Nullable ItemStack icon, Component label, @Nullable Component subtitle, Component value,
+                     boolean enabled, @Nullable Component tooltip, boolean striped, boolean arrows,
                      java.util.function.Consumer<Boolean> onCycle) {
             this.icon = icon;
             this.label = label;
@@ -290,6 +301,7 @@ public abstract class WandRow
             this.enabled = enabled;
             this.tooltip = tooltip;
             this.striped = striped;
+            this.arrows = arrows;
             this.onCycle = onCycle;
         }
 
@@ -323,7 +335,13 @@ public abstract class WandRow
                 int color = enabled ? Ui.TEXT_DIM : Ui.TEXT_OFF;
                 Ui.text(graphics, font, trim(font, subtitle, labelSpace), labelX, y + 18, color);
             }
-            renderValue(graphics, font, enabled, value, controlX(), right(), y + (height - 14) / 2);
+            if(arrows) {
+                renderValue(graphics, font, enabled, value, controlX(), right(), y + (height - 14) / 2);
+            }
+            else if(!value.getString().isEmpty()) {
+                Ui.textRight(graphics, font, trim(font, value, right() - controlX()),
+                        right() - 8, y + (height - 14) / 2 + 3, enabled ? Ui.OK : Ui.TEXT_OFF);
+            }
         }
 
         @Override
