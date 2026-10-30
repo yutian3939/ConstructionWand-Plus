@@ -220,8 +220,8 @@ public final class ApotheosisBridge
         menu.random.setSeed(menu.enchantmentSeed.get());
         for(int slot = 0; slot < 3; slot++) {
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
-            menu.enchantClue[slot] = -1;
-            menu.levelClue[slot] = -1;
+            // The clue of a row is what the table found for it, and the screen shows it as "?" without one: the
+            // clues are left exactly as the table computed them, only the cost is written here.
             if(menu.costs[slot] < slot + 1) menu.costs[slot]++;
         }
         menu.broadcastChanges();
