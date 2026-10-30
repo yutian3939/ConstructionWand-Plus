@@ -424,8 +424,7 @@ public class ScreenWand extends Screen
         // The list is the selector: every installed core is a row, and clicking one selects it. Cycling
         // through a value box needed as many clicks as the wanted core was far away in the order, which
         // stops working once a wand carries a handful of cores.
-        rows.add(new WandRow.Text(text("gui.core.behaviour"),
-                coreName(wandOptions.cores, wandOptions.cores.get()), Ui.OK, false, null));
+        rows.add(selectedCoreRow(text("gui.core.behaviour"), wandOptions.cores));
         rows.add(corePicker(wandOptions.cores));
     }
 
@@ -434,8 +433,7 @@ public class ScreenWand extends Screen
      * to. The two belong together, a storage core without its bound containers has nothing to give.
      */
     private void buildStorage() {
-        rows.add(new WandRow.Text(text("gui.core.material"),
-                coreName(wandOptions.materialCores, wandOptions.materialCores.get()), Ui.OK, false, null));
+        rows.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
         rows.add(corePicker(wandOptions.materialCores));
         buildBindings();
     }
@@ -444,11 +442,21 @@ public class ScreenWand extends Screen
      * One row per installed core, the chosen one marked. A shift click uninstalls that core, the hint in the
      * footer says so.
      */
+    /**
+     * The core in use, in the same value box the screen used before, only without the two arrows: the box
+     * made sense while it was the selector, and now it is a plain reading of the slot.
+     */
+    private WandRow selectedCoreRow(Component label, WandUpgradesSelectable<IWandCore> option) {
+        return new WandRow.Cycle(null, label, null, coreName(option, option.get()), true, null, false, false,
+                back -> {
+                });
+    }
+
     private WandRow corePicker(WandUpgradesSelectable<IWandCore> option) {
         IWandCore selected = option.get();
         List<WandRow.TwoColumn.Entry> entries = new ArrayList<>();
         for(IWandCore core : option.getUpgrades()) {
-            entries.add(new WandRow.TwoColumn.Entry(coreIcon(core), coreName(option, core), core == selected));
+            entries.add(new WandRow.TwoColumn.Entry(coreName(option, core), core == selected));
         }
         return new WandRow.TwoColumn(entries, translate(option.getDescTranslation()),
                 index -> selectCore(option, option.getUpgrades().get(index)));

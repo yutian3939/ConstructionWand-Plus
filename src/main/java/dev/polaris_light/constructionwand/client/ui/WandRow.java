@@ -125,22 +125,24 @@ public abstract class WandRow
     }
 
     /**
-     * A block that is split in two: a list to pick from on the left and the description of what is picked
-     * on the right. The usual label-and-value row cannot say that, so this row draws both columns itself
-     * and turns a click into the line it landed on.
+     * A block of the page split in two, with a divider between them: the entries to pick from on the left,
+     * the description of what is picked on the right.
+     * <p>
+     * Every entry is a row of its own with its own background, so a list of cores reads as a list of
+     * buttons instead of one slab of text; the picked one is drawn with the accent colour. The block grows
+     * with the number of entries and the page scrolls it like any other content.
      */
     public static class TwoColumn extends WandRow
     {
         /**
-         * @param icon     the icon of the entry, or {@code null} for one without
          * @param label    what the entry is called
-         * @param selected whether it is the one in use, which is what the colour marks
+         * @param selected whether it is the one in use
          */
-        public record Entry(@Nullable ItemStack icon, Component label, boolean selected) {
+        public record Entry(Component label, boolean selected) {
         }
 
-        /** The list needs room for the icon of a line, the description does not. */
-        private static final int LIST_LINE = 16;
+        private static final int ENTRY_HEIGHT = 20;
+        private static final int ENTRY_GAP = 4;
         private static final int TEXT_LINE = 10;
 
         private final List<Entry> entries;
@@ -153,12 +155,16 @@ public abstract class WandRow
             this.onSelect = onSelect;
         }
 
-        private int listWidth() {
-            return Math.max(60, (width - 24) / 2);
+        private int columnWidth() {
+            return Math.max(60, (width - 28) / 2);
+        }
+
+        private int dividerX() {
+            return x + 12 + columnWidth() + 8;
         }
 
         private int descriptionX() {
-            return x + 12 + listWidth() + 16;
+            return dividerX() + 10;
         }
 
         private int descriptionWidth() {
@@ -169,12 +175,14 @@ public abstract class WandRow
             return font.split(description, descriptionWidth());
         }
 
+        private int listHeight() {
+            return entries.size() * ENTRY_HEIGHT + Math.max(0, entries.size() - 1) * ENTRY_GAP;
+        }
+
         @Override
         public int height() {
             Font font = Minecraft.getInstance().font;
-            int list = entries.size() * LIST_LINE;
-            int text = descriptionLines(font).size() * TEXT_LINE;
-            return Math.max(list, text) + 8;
+            return Math.max(listHeight(), descriptionLines(font).size() * TEXT_LINE) + 8;
         }
 
         @Override
@@ -182,15 +190,17 @@ public abstract class WandRow
             int top = y + 4;
             for(int index = 0; index < entries.size(); index++) {
                 Entry entry = entries.get(index);
-                int lineY = top + index * LIST_LINE;
-                if(entry.icon() != null && !entry.icon().isEmpty()) {
-                    graphics.renderItem(entry.icon(), x + 10, lineY - 4);
-                }
-                Ui.text(graphics, font, trim(font, entry.label(), listWidth() - 24), labelX(entry.icon()),
-                        lineY + 4, entry.selected() ? Ui.OK : Ui.TEXT);
+                int entryY = top + index * (ENTRY_HEIGHT + ENTRY_GAP);
+                Ui.rowBackground(graphics, x + 12, entryY, columnWidth(), ENTRY_HEIGHT, false, index % 2 == 1);
+                Ui.text(graphics, font, trim(font, entry.label(), columnWidth() - 12), x + 18, entryY + 6,
+                        entry.selected() ? Ui.OK : Ui.TEXT);
             }
 
-            int descriptionTop = y + 6;
+            // The divider that keeps the two columns apart.
+            int dividerTop = y + 2;
+            Ui.rounded(graphics, dividerX(), dividerTop, 1, height() - 4, Ui.DIVIDER);
+
+            int descriptionTop = y + 4;
             for(FormattedCharSequence line : descriptionLines(font)) {
                 graphics.drawString(font, line, descriptionX(), descriptionTop, Ui.TEXT_DIM, false);
                 descriptionTop += TEXT_LINE;
@@ -200,11 +210,14 @@ public abstract class WandRow
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if(button != 0 || !contains(mouseX, mouseY)) return false;
-            // The right half is the description, not a list; only the left column picks something.
-            if(mouseX >= descriptionX() - 8) return false;
+            // Only the left column is a list, the right one is the description.
+            if(mouseX >= dividerX()) return false;
 
-            int index = (int) ((mouseY - (y + 4)) / LIST_LINE);
+            int index = (int) ((mouseY - (y + 4)) / (ENTRY_HEIGHT + ENTRY_GAP));
             if(index < 0 || index >= entries.size()) return false;
+            // A click in the gap between two entries belongs to neither of them.
+            int offset = (int) ((mouseY - (y + 4)) % (ENTRY_HEIGHT + ENTRY_GAP));
+            if(offset > ENTRY_HEIGHT) return false;
 
             onSelect.accept(index);
             return true;
@@ -423,13 +436,7 @@ public abstract class WandRow
                 int color = enabled ? Ui.TEXT_DIM : Ui.TEXT_OFF;
                 Ui.text(graphics, font, trim(font, subtitle, labelSpace), labelX, y + 18, color);
             }
-            if(arrows) {
-                renderValue(graphics, font, enabled, value, controlX(), right(), y + (height - 14) / 2);
-            }
-            else if(!value.getString().isEmpty()) {
-                Ui.textRight(graphics, font, trim(font, value, right() - controlX()),
-                        right() - 8, y + (height - 14) / 2 + 3, enabled ? Ui.OK : Ui.TEXT_OFF);
-            }
+            renderValue(graphics, font, enabled, value, controlX(), right(), y + (height - 14) / 2, arrows);
         }
 
         @Override
@@ -455,14 +462,16 @@ public abstract class WandRow
      * Draws a value box with the two arrows, shared by the rows that cycle through values.
      */
     static void renderValue(GuiGraphics graphics, Font font, boolean enabled, Component value,
-                            int left, int right, int y) {
+                            int left, int right, int y, boolean arrows) {
         int height = 14;
         int accent = enabled ? Ui.accent() : Ui.TEXT_OFF;
         Ui.rounded(graphics, left, y, right - left, height, 0x22FFFFFF);
-        Ui.textRight(graphics, font, "\u203a", right - 5, y + 3, accent);
-        Ui.text(graphics, font, "\u2039", left + 5, y + 3, accent);
+        if(arrows) {
+            Ui.textRight(graphics, font, "\u203a", right - 5, y + 3, accent);
+            Ui.text(graphics, font, "\u2039", left + 5, y + 3, accent);
+        }
 
-        String text = trim(font, value, right - left - 22);
+        String text = trim(font, value, right - left - (arrows ? 22 : 12));
         Ui.text(graphics, font, text, (left + right) / 2 - font.width(text) / 2, y + 3,
                 enabled ? Ui.TEXT : Ui.TEXT_OFF);
     }
