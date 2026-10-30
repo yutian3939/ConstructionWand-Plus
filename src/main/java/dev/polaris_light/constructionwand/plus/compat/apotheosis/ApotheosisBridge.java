@@ -25,6 +25,7 @@ import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentHelper;
 import net.minecraft.world.item.ItemStack;
 import dev.shadowsoffire.apothic_enchanting.Ench;
+import dev.shadowsoffire.apothic_enchanting.payloads.CluePayload;
 import dev.shadowsoffire.apothic_enchanting.payloads.StatsPayload;
 import dev.shadowsoffire.apothic_enchanting.table.EnchantmentTableStats;
 import dev.polaris_light.constructionwand.ConstructionWand;
@@ -242,6 +243,10 @@ public final class ApotheosisBridge
                     EnchantmentInstance data = list.remove(menu.random.nextInt(list.size()));
                     menu.enchantClue[slot] = registry.getId(data.enchantment.value());
                     menu.levelClue[slot] = data.level;
+
+                    // The hint a row shows is a packet of its own, and the table sent it before the numbers were
+                    // written here: the row is told again, with what the pinned numbers offer.
+                    PacketDistributor.sendToPlayer(player, new CluePayload(slot, List.of(data), list.isEmpty()));
                 }
             }
         }
