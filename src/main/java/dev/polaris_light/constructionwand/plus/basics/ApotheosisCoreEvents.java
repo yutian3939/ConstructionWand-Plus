@@ -50,6 +50,9 @@ public final class ApotheosisCoreEvents
     /** What was last written onto the open table of a player, so the numbers are only sent when they change. */
     private static final Map<UUID, EnchantmentTableStats> SENT = new HashMap<>();
 
+    /** The item that was in the slot of a player's table, which is what makes the table recompute its stats. */
+    private static final Map<UUID, ItemStack> SLOT = new HashMap<>();
+
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if(event.isCanceled() || !ApotheosisBridge.isLoaded()) return;
@@ -128,11 +131,10 @@ public final class ApotheosisCoreEvents
         if(hasInfuser()) InfuserBridge.ensureInstalled();
 
         MinecraftServer server = event.getServer();
-        if(server.getTickCount() % 4 != 0) return;
 
         for(ServerPlayer player : server.getPlayerList().getPlayers()) {
             if(!ApotheosisBridge.hasTableOpen(player)) {
-                SENT.remove(player.getUUID());
+                forget(player);
                 continue;
             }
 
@@ -142,19 +144,33 @@ public final class ApotheosisCoreEvents
             if(!(player.level() instanceof ServerLevel level)) continue;
             int[] pinned = ApotheosisPins.get(server).get(GlobalPos.of(level.dimension(), pos));
             if(pinned == null) {
-                SENT.remove(player.getUUID());
+                forget(player);
                 continue;
             }
 
             EnchantmentTableStats stats = ApotheosisBridge.statsFor(level, pos, pinned[0], pinned[1], pinned[2]);
-            ApotheosisBridge.applyStats(player, stats);
 
-            // Only a change is sent: the numbers of a table do not move while it is open.
-            if(!stats.equals(SENT.get(player.getUUID()))) {
+            // The table recomputes its own numbers whenever the item in its slot changes, and it tells the
+            // screen about that. So the pinned numbers are written back on every tick, and sent again as soon
+            // as the item moved: that is what makes them hold instead of lasting until the next item.
+            ItemStack item = player.containerMenu.getSlot(0).getItem().copy();
+            boolean replaced = !ItemStack.matches(item, SLOT.getOrDefault(player.getUUID(), ItemStack.EMPTY));
+            SLOT.put(player.getUUID(), item);
+
+            ApotheosisBridge.applyStats(player, stats);
+            if(replaced || !stats.equals(SENT.get(player.getUUID()))) {
                 SENT.put(player.getUUID(), stats);
                 ApotheosisBridge.sendStats(player, stats);
             }
         }
+    }
+
+    /**
+     * Forgets what was written onto the table of a player, so the next table they open gets its numbers again.
+     */
+    private static void forget(ServerPlayer player) {
+        SENT.remove(player.getUUID());
+        SLOT.remove(player.getUUID());
     }
 
     private static void tell(ServerPlayer player, Component message) {

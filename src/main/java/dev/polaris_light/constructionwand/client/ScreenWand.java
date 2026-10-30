@@ -548,7 +548,8 @@ public class ScreenWand extends Screen
         boolean shapes = places || action instanceof ActionDestruction || action instanceof ActionDigging;
         // A core from another mod is unknown: rather than hiding settings it might read, it is offered
         // everything the wand has.
-        boolean permissive = !shapes && !(action instanceof ActionSlay) && !(action instanceof ActionTime);
+        boolean permissive = !shapes && !(action instanceof ActionSlay) && !(action instanceof ActionTime)
+                && !(action instanceof ActionApotheosis);
 
         List<WandRow> own = new ArrayList<>();
         if(action instanceof ActionSlay) {
