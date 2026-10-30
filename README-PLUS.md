@@ -28,6 +28,15 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：进度授予改为逐条 criterion、注入器右键也取消点击（2.16.60）
+
+- **层级仍显示“已锁定”**：`PlayerAdvancements.award` 必须给出**真实存在的 criterion 名**，写死 `"code_triggered"` 时不在该进度里就授不上。
+  现在遍历 `advancement.value().criteria().keySet()` 逐条授予，层级进度才能真的完成。
+- **注入器也改为“消耗右键”**：和附魔台一致 —— 右键注入器时取消点击（不打开它自己的界面），把位阶固定到该方块，并应用世界层级，
+  动作栏提示「已固定：这座附魔注入器的位阶为 N（潜行右键取消）」。
+- **注入器上限**：Enchanting Infuser 走 Apotheosis 行为时把上限写死为 50（`getEnchantmentPowerLimit` → 50），
+  位阶高于 50 永远到不了。包装层现在把上限提升到已固定的最高位阶。
+
 ## 神化核心：真正“解锁”世界层级、行的提示交还附魔台（2.16.59）
 
 **世界层级没真正解锁**：神化里“当前层级”与“已解锁层级”是两件事 —— 后者是一个**进度（advancement）**，

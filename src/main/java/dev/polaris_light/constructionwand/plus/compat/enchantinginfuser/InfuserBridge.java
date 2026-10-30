@@ -163,7 +163,16 @@ public final class InfuserBridge
 
         @Override
         public int getEnchantmentPowerLimit(InfuserType infuserType) {
-            return parent.getEnchantmentPowerLimit(infuserType);
+            int base = parent.getEnchantmentPowerLimit(infuserType);
+            if(RANKS.isEmpty()) return base;
+
+            // The behaviour of Apotheosis caps an infuser at fifty power, which a pinned rank above that would
+            // never reach: the limit is raised to the highest rank a wand has written.
+            int highest = base;
+            for(int rank : RANKS.values()) {
+                highest = Math.max(highest, rank);
+            }
+            return highest;
         }
 
         @Override

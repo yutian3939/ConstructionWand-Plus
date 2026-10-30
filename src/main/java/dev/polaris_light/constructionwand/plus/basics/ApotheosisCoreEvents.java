@@ -67,12 +67,21 @@ public final class ApotheosisCoreEvents
         BlockState state = touched.getBlockState(event.getPos());
 
         if(!ApotheosisBridge.isTable(state)) {
-            // An infuser has its own screen and its own way of being told: it keeps the click, gets the rank.
-            if(hasInfuser() && InfuserBridge.isInfuser(state)) {
-                InfuserBridge.setRank(touched, event.getPos(), ApotheosisLevels.eterna(wand));
-                if(player instanceof ServerPlayer serverPlayer) {
-                    ApotheosisBridge.applyTier(serverPlayer, ApotheosisLevels.tier(wand));
-                }
+            if(!hasInfuser() || !InfuserBridge.isInfuser(state)) return;
+
+            // An infuser is told a rank the same way a table is told its numbers: the click is taken, so its own
+            // screen does not open for this, and the rank stays on it.
+            event.setCanceled(true);
+            event.setUseBlock(TriState.FALSE);
+            event.setUseItem(TriState.FALSE);
+            event.setCancellationResult(InteractionResult.SUCCESS);
+
+            InfuserBridge.setRank(touched, event.getPos(), ApotheosisLevels.eterna(wand));
+            if(player instanceof ServerPlayer serverPlayer) {
+                if(!((ServerLevel) touched).mayInteract(player, event.getPos())) return;
+                ApotheosisBridge.applyTier(serverPlayer, ApotheosisLevels.tier(wand));
+                tell(serverPlayer, Component.translatable(ConstructionWand.MODID + ".gui.apoth.infuser_pinned",
+                        ApotheosisLevels.eterna(wand)));
             }
             return;
         }

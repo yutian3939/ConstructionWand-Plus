@@ -309,5 +309,6 @@
   "constructionwand.gui.info.apotheosis_infuser": "附魔注入器只认位阶：量子化与阿卡那对它无效，右键后它的位阶被设为你设定的值",
   "constructionwand.gui.apoth.pinned": "已固定：位阶 %s、量子化 %s、阿卡那 %s，世界层级 %s",
   "constructionwand.gui.apoth.unpinned": "已取消这座附魔台的固定数值",
-  "constructionwand.gui.apoth.not_pinned": "这座附魔台本来就没有固定数值"
+  "constructionwand.gui.apoth.not_pinned": "这座附魔台本来就没有固定数值",
+  "constructionwand.gui.apoth.infuser_pinned": "已固定：这座附魔注入器的位阶为 %s（潜行右键取消）"
 }

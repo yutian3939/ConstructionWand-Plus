@@ -96,7 +96,13 @@ public final class ApotheosisBridge
 
     private static void awardTier(ServerPlayer player, WorldTier tier) {
         var advancement = player.server.getAdvancements().get(tier.getUnlockAdvancement());
-        if(advancement != null) player.getAdvancements().award(advancement, "code_triggered");
+        if(advancement == null) return;
+
+        // Neither the criteria nor their number are known here, and granting an unknown one throws, so every
+        // criterion the advancement has is granted.
+        for(String criterion : advancement.value().criteria().keySet()) {
+            player.getAdvancements().award(advancement, criterion);
+        }
     }
 
     /**

@@ -329,5 +329,6 @@
   "constructionwand.gui.info.apotheosis_infuser": "The enchanting infuser only knows rank: quanta and arcana do nothing on it, a right click sets its rank to the value here",
   "constructionwand.gui.apoth.pinned": "Pinned: rank %s, quanta %s, arcana %s, world tier %s",
   "constructionwand.gui.apoth.unpinned": "The pinned numbers of this table were removed",
-  "constructionwand.gui.apoth.not_pinned": "This table had no pinned numbers"
+  "constructionwand.gui.apoth.not_pinned": "This table had no pinned numbers",
+  "constructionwand.gui.apoth.infuser_pinned": "Pinned: this infuser works at rank %s (sneak right click to remove)"
 }
