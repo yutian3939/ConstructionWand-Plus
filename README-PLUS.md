@@ -28,6 +28,17 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心页：窗口保持高、内容铺满整个窗口（2.16.39）
+
+上一版把窗口按内容收高，结果整个面板变得很扁。改回**固定高度**（`layout()` 里身高逻辑恢复：可用高度的 4/5，夹在 270–`MAX_PANEL_HEIGHT`），
+改由**内容铺满窗口**：
+
+- `refresh()` 先算几何再建行，页面可以知道"还剩多少高度"；
+- 新增 `roomLeft()` = `contentHeightPixels − 已用行高 − 间距 − 6`，传给两栏块（`WandRow.TwoColumn(entries, desc, fill, onSelect)`）；
+- 左栏列表窗口取 `max(自然高度, fill)`，所以核心少时窗口照样铺到底，核心多时才出现自己的滚动条；
+- 多留 6px 余量，避免整页出现 2px 的滚动条；
+- 截图：`docs/wand-screen-cores.png`、`docs/wand-screen-storage.png`。
+
 ## 核心页：描述带「描述：」、窗口按内容收高、核心描述全部重写（2.16.38）
 
 - **右栏改为「描述：<正文>」**：`corePicker` 把 `gui.status.description` 前缀拼在描述前面，和原来核心状态区的格式一致；

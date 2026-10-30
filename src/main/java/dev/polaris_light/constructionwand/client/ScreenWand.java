@@ -153,22 +153,14 @@ public class ScreenWand extends Screen
 
     private void layout() {
         panelWidth = Math.min(MAX_PANEL_WIDTH, Math.max(220, width - 20));
-        applyPanelHeight(contentHeight);
-    }
 
-    /**
-     * Sizes the window around what the page needs, so a short page does not sit in a window with an empty
-     * bottom half. A long page grows to the tallest window and scrolls inside it.
-     *
-     * @param needed height the rows of the page take, in pixels
-     */
-    private void applyPanelHeight(int needed) {
+        // The window keeps one height, so switching pages does not make it jump: the pages are laid out to
+        // fill it instead, and a page that needs more room scrolls.
         int rail = Tab.values().length * (TAB_HEIGHT + TAB_GAP) - TAB_GAP;
         int smallest = HEADER_HEIGHT + FOOTER_HEIGHT + 8 + rail + 4;
         int available = Math.max(smallest, height - 20);
-
-        int wanted = HEADER_HEIGHT + FOOTER_HEIGHT + 8 + Math.max(rail + 4, needed + 4);
-        panelHeight = Math.min(Math.min(MAX_PANEL_HEIGHT, Math.max(180, wanted)), available);
+        int wanted = Math.max(270, (int) (available * 0.8F));
+        panelHeight = Math.min(Math.min(MAX_PANEL_HEIGHT, wanted), available);
 
         panelX = (width - panelWidth) / 2;
         panelY = (height - panelHeight) / 2;
@@ -186,17 +178,15 @@ public class ScreenWand extends Screen
      */
     private void refresh() {
         rows.clear();
+        // The geometry comes first: a page may fill the room it has left, which it has to know about.
+        layout();
         switch(tab) {
             case CORES -> buildCores();
             case OPTIONS -> buildOptions();
             case UPGRADES -> buildUpgrades();
             case STORAGE -> buildStorage();
         }
-        layout();
         layoutRows();
-        int before = panelHeight;
-        applyPanelHeight(contentHeight);
-        if(panelHeight != before) layoutRows();
     }
 
     private void layoutRows() {
@@ -229,9 +219,6 @@ public class ScreenWand extends Screen
         renderThemeButton(graphics, mouseX, mouseY);
 
         layoutRows();
-        int before = panelHeight;
-        applyPanelHeight(contentHeight);
-        if(panelHeight != before) layoutRows();
         boolean overContent = overContent(mouseX, mouseY);
         int rowMouseX = overContent ? mouseX : -1;
         int rowMouseY = overContent ? mouseY : -1;
@@ -442,7 +429,7 @@ public class ScreenWand extends Screen
         // through a value box needed as many clicks as the wanted core was far away in the order, which
         // stops working once a wand carries a handful of cores.
         rows.add(selectedCoreRow(text("gui.core.behaviour"), wandOptions.cores));
-        rows.add(corePicker(wandOptions.cores));
+        rows.add(corePicker(wandOptions.cores, roomLeft(0)));
     }
 
     /**
@@ -451,7 +438,7 @@ public class ScreenWand extends Screen
      */
     private void buildStorage() {
         rows.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
-        rows.add(corePicker(wandOptions.materialCores));
+        rows.add(corePicker(wandOptions.materialCores, roomLeft(0)));
         buildBindings();
     }
 
@@ -469,14 +456,26 @@ public class ScreenWand extends Screen
                 });
     }
 
-    private WandRow corePicker(WandUpgradesSelectable<IWandCore> option) {
+    /**
+     * @return the height the page has left for a block that fills it, minus a gap above it
+     */
+    private int roomLeft(int reserved) {
+        int used = reserved;
+        for(WandRow row : rows) {
+            used += row.height() + ROW_GAP;
+        }
+        // A few pixels are kept back: an exact fit would leave the page scrollbar showing for two pixels.
+        return Math.max(WandRow.ROW_HEIGHT, contentHeightPixels - used - ROW_GAP - 6);
+    }
+
+    private WandRow corePicker(WandUpgradesSelectable<IWandCore> option, int fill) {
         IWandCore selected = option.get();
         List<WandRow.TwoColumn.Entry> entries = new ArrayList<>();
         for(IWandCore core : option.getUpgrades()) {
             entries.add(new WandRow.TwoColumn.Entry(coreName(option, core), core == selected));
         }
         return new WandRow.TwoColumn(entries,
-                text("gui.status.description").copy().append(translate(option.getDescTranslation())),
+                text("gui.status.description").copy().append(translate(option.getDescTranslation())), fill,
                 index -> selectCore(option, option.getUpgrades().get(index)));
     }
 

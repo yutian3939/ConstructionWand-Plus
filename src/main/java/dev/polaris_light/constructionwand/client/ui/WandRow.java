@@ -166,13 +166,24 @@ public abstract class WandRow
         private final List<Entry> entries;
         private final Component description;
         private final IntConsumer onSelect;
+        /** How tall the block is asked to be, so a short list still fills the page. */
+        private final int fill;
 
         private int leftScroll;
         private boolean scrolledToSelection;
 
         public TwoColumn(List<Entry> entries, Component description, IntConsumer onSelect) {
+            this(entries, description, 0, onSelect);
+        }
+
+        /**
+         * @param fill minimum height of the block: the list window grows to it, so a wand with a few cores
+         *             still fills the page instead of leaving the room below empty
+         */
+        public TwoColumn(List<Entry> entries, Component description, int fill, IntConsumer onSelect) {
             this.entries = entries;
             this.description = description;
+            this.fill = fill;
             this.onSelect = onSelect;
         }
 
@@ -206,7 +217,10 @@ public abstract class WandRow
 
         private int viewport() {
             int rows = Math.min(entries.size(), VISIBLE_ENTRIES);
-            return Math.max(ENTRY_HEIGHT, rows * ENTRY_HEIGHT + Math.max(0, rows - 1) * ENTRY_GAP);
+            int natural = Math.max(ENTRY_HEIGHT, rows * ENTRY_HEIGHT + Math.max(0, rows - 1) * ENTRY_GAP);
+            // The page hands the block the room it has left; the list window grows to it and scrolls when the
+            // entries need more. A block without a size of its own keeps the natural height.
+            return fill > 0 ? Math.max(natural, fill) : natural;
         }
 
         private int maxScroll() {
