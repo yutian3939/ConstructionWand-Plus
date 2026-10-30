@@ -433,14 +433,16 @@ public final class Ui
      * stays readable without drawing lines between the entries.
      */
     /**
-     * A border of one pixel, for a plate that has to stand out without being filled in.
+     * A border of one pixel that follows the rounded corners of the plate it surrounds.
+     * <p>
+     * The ring is painted first and its middle is cleared again with the colour of the window, so what is
+     * left is a hairline ring of the rounded shape - drawing four straight lines instead would square off
+     * the corners.
      */
-    public static void outline(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+    public static void outlineRounded(GuiGraphics graphics, int x, int y, int width, int height, int color) {
         if(width <= 2 || height <= 2) return;
-        graphics.fill(x, y, x + width, y + 1, color);
-        graphics.fill(x, y + height - 1, x + width, y + height, color);
-        graphics.fill(x, y + 1, x + 1, y + height - 1, color);
-        graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+        rounded(graphics, x, y, width, height, color);
+        rounded(graphics, x + 1, y + 1, width - 2, height - 2, BACKGROUND);
     }
     public static void rowBackground(GuiGraphics graphics, int x, int y, int width, int height,
                                      boolean hovered, boolean striped) {
