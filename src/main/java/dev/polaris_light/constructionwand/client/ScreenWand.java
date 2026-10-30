@@ -464,8 +464,9 @@ public class ScreenWand extends Screen
         for(WandRow row : rows) {
             used += row.height() + ROW_GAP;
         }
-        // A few pixels are kept back: an exact fit would leave the page scrollbar showing for two pixels.
-        return Math.max(WandRow.ROW_HEIGHT, contentHeightPixels - used - ROW_GAP - 6);
+        // The block adds its own padding around the window it is given, and the page counts a gap after it:
+        // both come off here, or the page ends two pixels too tall and shows its scrollbar for nothing.
+        return Math.max(WandRow.ROW_HEIGHT, contentHeightPixels - used - ROW_GAP - 12);
     }
 
     private WandRow corePicker(WandUpgradesSelectable<IWandCore> option, int fill) {

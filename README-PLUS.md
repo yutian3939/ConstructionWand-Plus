@@ -28,6 +28,17 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心页：整页不再出现滚动条（2.16.40）
+
+上一版铺满窗口后，**整页**在面板最右边又出现了滚动条——原因是两栏块自身在给的窗口高度上还有 8px 内边距（`height()` 里 `viewport + 8`），
+而行间距又被计了一次，于是内容比视口高 2px，`Ui.scrollBar` 就把它画了出来。现在 `roomLeft()` 一并扣掉块内边距与行间距：
+
+```java
+return Math.max(WandRow.ROW_HEIGHT, contentHeightPixels - used - ROW_GAP - 12);
+```
+
+实测：核心页面板右侧**不再有整页滚动条**，只有左栏列表需要时才出现它自己的滚动条（分割线左侧）。
+
 ## 核心页：窗口保持高、内容铺满整个窗口（2.16.39）
 
 上一版把窗口按内容收高，结果整个面板变得很扁。改回**固定高度**（`layout()` 里身高逻辑恢复：可用高度的 4/5，夹在 270–`MAX_PANEL_HEIGHT`），
