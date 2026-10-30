@@ -28,6 +28,32 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：受限提示改用 modifier 抬到目标位阶（2.16.66）
+
+直接读了 Apothic 的界面源码，找到了那句提示的**确切条件**（`ApothEnchantmentScreen.java:305`）：
+
+```java
+float playerMax = (float) Minecraft.getInstance().player.getAttributeValue(Ench.Attributes.MAX_ETERNA);
+if (playerMax < 100) → 显示「附魔能力受限」
+```
+
+也就是说它看的是**最终数值**，而层级加成是 **modifier**：低层级的 TierAugment 会往下减，
+所以我上版只抬 `setBaseValue` 时最终值仍可能 < 100。现在改成用 modifier 把最终值顶到目标位阶：
+
+```java
+ResourceLocation id = ConstructionWand.loc("apoth_rank");
+double before = attribute.getValue();
+attribute.removeModifier(id);
+if (before < rank) {
+    attribute.addTransientModifier(new AttributeModifier(id, rank - before, ADD_VALUE));
+}
+player.connection.send(new ClientboundUpdateAttributesPacket(player.getId(), List.of(attribute)));
+```
+
+- 每次固定/写回都先移除旧 modifier 再加，所以不会叠加；
+- 最后仍然把属性包发给客户端，界面立刻看到新值；
+- 日志会打 `[apoth] rank limit value X -> Y wanted Z`，能直接确认最终值。
+
 ## 神化核心：把“受限”从客户端界面上真正的去掉（2.16.65）
 
 用 `logs/latest.log` 里的 `[apoth]` 行确认了实际状态：
