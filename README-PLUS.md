@@ -28,6 +28,15 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：三行重算与附魔台自己一致，并让种子前进（2.16.61）
+
+- `refreshRows` 现在完整照抄附魔台自己的那一步：`getEnchantmentCost` → `enchantClue/levelClue = -1` →
+  `costs[slot] < slot + 1` 时 +1 → 广播，所以三行消耗与等级数字跟固定值一致；
+- **词条固定不变**的原因：附魔台用 `enchantmentSeed` 作为随机种子，我们在重算时反复用同一颗种子，
+  于是同一件物品永远得到同一组词条。现在每次重算后 **把种子 +1**，换物品/再附魔都会得到新的组合；
+- 界面“显示低等级、实际高等级”的差别来自客户端行提示的刷新时机（它以收到的 `costs` 与 stats 为准），
+  这次 `costs` 也按固定值广播了，界面与结果应当一致；若仍有出入，下一步会把 `enchantClue/levelClue` 也按固定值算好再同步。
+
 ## 神化核心：进度授予改为逐条 criterion、注入器右键也取消点击（2.16.60）
 
 - **层级仍显示“已锁定”**：`PlayerAdvancements.award` 必须给出**真实存在的 criterion 名**，写死 `"code_triggered"` 时不在该进度里就授不上。
