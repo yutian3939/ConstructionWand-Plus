@@ -1,6 +1,8 @@
 package dev.polaris_light.constructionwand.plus.compat.apotheosis;
 
+import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.EnchantmentMenu;
@@ -17,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import dev.shadowsoffire.apothic_enchanting.Ench;
 import dev.shadowsoffire.apothic_enchanting.payloads.StatsPayload;
 import dev.shadowsoffire.apothic_enchanting.table.EnchantmentTableStats;
+import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
 
 import javax.annotation.Nullable;
@@ -113,12 +116,19 @@ public final class ApotheosisBridge
     public static void raiseRankLimit(ServerPlayer player, int rank) {
         var attribute = player.getAttribute(Ench.Attributes.MAX_ETERNA);
         if(attribute == null) return;
-        if(attribute.getBaseValue() < rank) attribute.setBaseValue(rank);
+
+        double before = attribute.getBaseValue();
+        if(before < rank) attribute.setBaseValue(rank);
+
+        // The screen of the table reads the value on the client, which only learns about a new base value when
+        // it is told: without this the screen keeps saying the rank is limited while the server already uses it.
+        player.connection.send(new ClientboundUpdateAttributesPacket(player.getId(), List.of(attribute)));
+
+        ConstructionWand.LOGGER.info("[apoth] rank limit base {} -> {} value {} wanted {}", before,
+                attribute.getBaseValue(), attribute.getValue(), rank);
     }
 
     /**
-     * @return the world tier the player has right now, as the name the wand shows
-     */    /**
      * @return the world tier the player has right now, as the name the wand shows
      */
     public static String currentTierName(ServerPlayer player) {

@@ -28,6 +28,28 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：把“受限”从客户端界面上真正的去掉（2.16.65）
+
+用 `logs/latest.log` 里的 `[apoth]` 行确认了实际状态：
+
+```
+[apoth] pin BlockPos{x=117, y=71, z=39} rank=100 quanta=15 arcana=100 tier=4 was pinnacle
+[apoth] pin done, tier now pinnacle
+[apoth] refresh pos=… pinned=100/15/100 eterna=100.0
+```
+
+也就是说**服务端一直在用固定的 100 位阶**（这解释了“虽然显示受限但能附魔上”），问题只在**客户端显示**：
+附魔台界面读的是客户端本地 `max_eterna` 属性的值，而我只在服务端抬了基础值，客户端不知道。
+
+修复：抬完基础值后把该属性同步给客户端
+
+```java
+if(before < rank) attribute.setBaseValue(rank);
+player.connection.send(new ClientboundUpdateAttributesPacket(player.getId(), List.of(attribute)));
+```
+
+另外把诊断日志收进“物品变化”分支，避免每 tick 刷屏（那次日志里 27 秒写了 543 行）。
+
 ## 神化核心：解除“附魔能力受限”（2.16.63）
 
 界面上的「附魔能力受限」= `apothic_enchanting:max_eterna`（最大位阶属性）把你的位阶夹住了：

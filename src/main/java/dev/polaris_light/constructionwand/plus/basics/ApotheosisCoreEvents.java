@@ -176,9 +176,9 @@ public final class ApotheosisCoreEvents
             boolean replaced = !ItemStack.matches(item, SLOT.getOrDefault(player.getUUID(), ItemStack.EMPTY));
             SLOT.put(player.getUUID(), item);
 
-            ConstructionWand.LOGGER.info("[apoth] refresh pos={} pinned={} eterna={} replaced={}", pos,
-                    pinned[0] + "/" + pinned[1] + "/" + pinned[2], stats.eterna(), replaced);
             if(replaced) {
+                ConstructionWand.LOGGER.info("[apoth] refresh pos={} pinned={} eterna={}", pos,
+                        pinned[0] + "/" + pinned[1] + "/" + pinned[2], stats.eterna());
                 // The item in the slot changed, so the table has just rebuilt its three rows from its own
                 // numbers: the pass is repeated here with the pinned ones, which is what the rows and the
                 // price show from now on.
