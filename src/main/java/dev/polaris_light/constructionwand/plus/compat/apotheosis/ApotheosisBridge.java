@@ -23,6 +23,7 @@ import dev.shadowsoffire.apotheosis.Apoth;
 import dev.shadowsoffire.apotheosis.tiers.WorldTier;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentMenu;
 import dev.shadowsoffire.apothic_enchanting.table.ApothEnchantmentHelper;
+import dev.shadowsoffire.apothic_enchanting.table.infusion.InfusionRecipe;
 import net.minecraft.world.item.ItemStack;
 import dev.shadowsoffire.apothic_enchanting.Ench;
 import dev.shadowsoffire.apothic_enchanting.payloads.CluePayload;
@@ -225,8 +226,14 @@ public final class ApotheosisBridge
         // pinned; counting it up by hand would have made the next set of offers predictable.
         menu.enchantmentSeed.set(player.getEnchantmentSeed());
         menu.random.setSeed(menu.enchantmentSeed.get());
+        // The third row of a table can also be an infusion, and whether one is offered depends on the recipe the
+        // item matches and on the room around the table. That row is left exactly as the table computed it, so an
+        // infusion is never offered where its conditions are not met.
+        boolean infusion = InfusionRecipe.findItemMatch(player.level(), item) != null;
+
         Registry<Enchantment> registry = player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
         for(int slot = 0; slot < 3; slot++) {
+            if(slot == 2 && infusion) continue;
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
             if(menu.costs[slot] < slot + 1) menu.costs[slot]++;
 
