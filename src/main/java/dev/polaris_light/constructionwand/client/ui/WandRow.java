@@ -32,6 +32,10 @@ public abstract class WandRow
     public int y;
     public int width;
 
+    /** Where the mouse was when the row was last drawn, for a row that paints parts of its own. */
+    protected int mouseX;
+    protected int mouseY;
+
     private boolean hovered;
 
     public int height() {
@@ -46,6 +50,8 @@ public abstract class WandRow
     }
 
     public void render(GuiGraphics graphics, Font font, int mouseX, int mouseY) {
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
         hovered = contains(mouseX, mouseY) && enabled();
         if(background()) Ui.rowBackground(graphics, x, y, width, height(), hovered, striped());
         renderRow(graphics, font, enabled() ? Ui.TEXT : Ui.TEXT_OFF);
@@ -175,7 +181,7 @@ public abstract class WandRow
          * @param label    what the entry is called
          * @param selected whether it is the one in use
          */
-        public record Entry(Component label, boolean selected) {
+        public record Entry(Component label, boolean selected, int color) {
         }
 
         private static final int ENTRY_HEIGHT = 20;
@@ -279,11 +285,22 @@ public abstract class WandRow
                 int entryY = top + index * lineStep() - leftScroll;
                 if(entryY + ENTRY_HEIGHT < top || entryY > top + viewport()) continue;
 
-                // Every entry carries a plate; the picked one is drawn brighter than the rest.
-                Ui.rounded(graphics, x + 12, entryY, columnWidth(), ENTRY_HEIGHT,
-                        entry.selected() ? 0x2EFFFFFF : 0x12FFFFFF);
+                int left = x + 12;
+                boolean hovered = mouseX >= left && mouseX < left + columnWidth()
+                        && mouseY >= entryY && mouseY < entryY + ENTRY_HEIGHT;
+
+                // Every entry carries a plate. It lights up under the mouse, and the picked one is drawn
+                // brighter and ringed in the colour of its core, the same colour its name has.
+                if(entry.selected()) {
+                    Ui.rounded(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2, entry.color());
+                    Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT, 0x2EFFFFFF);
+                }
+                else {
+                    Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT,
+                            hovered ? Ui.ROW_HOVER : 0x12FFFFFF);
+                }
                 Ui.text(graphics, font, trim(font, entry.label(), columnWidth() - 12), x + 18, entryY + 6,
-                        entry.selected() ? Ui.OK : Ui.TEXT);
+                        entry.selected() || hovered ? Ui.OK : Ui.TEXT);
             }
             graphics.disableScissor();
 

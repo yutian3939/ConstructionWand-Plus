@@ -475,7 +475,7 @@ public class ScreenWand extends Screen
         IWandCore selected = option.get();
         List<WandRow.TwoColumn.Entry> entries = new ArrayList<>();
         for(IWandCore core : option.getUpgrades()) {
-            entries.add(new WandRow.TwoColumn.Entry(coreName(option, core), core == selected));
+            entries.add(new WandRow.TwoColumn.Entry(coreName(option, core), core == selected, core.getColor()));
         }
         return new WandRow.TwoColumn(entries,
                 text("gui.status.description").copy().append(translate(option.getDescTranslation())), fill,

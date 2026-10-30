@@ -28,6 +28,16 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心列表：悬浮高亮 + 选中项按核心颜色描边（2.16.42）
+
+- `WandRow` 记录最近一次绘制时的鼠标位置（`mouseX/mouseY`），让自行绘制内容的行也能判断悬浮；
+- `TwoColumn.Entry` 增加 `int color`（`ScreenWand.corePicker` 传 `core.getColor()`）；
+- 列表条目三种状态：
+  - 普通：`0x12FFFFFF` 圆角底；
+  - **悬浮**：`Ui.ROW_HOVER` 底 + 文字转为 `Ui.OK`；
+  - **选中**：`0x2EFFFFFF` 更亮的底，**外加 1px 核心色描边**（先用核心色画一个外扩 1px 的圆角矩形，再在上面盖内层底板，省掉画线工具）。
+- 实测（截图 `docs/wand-screen-cores.png`）：选中的「时间核心」有一圈青色描边；悬浮态需要真实鼠标移动，探针里 `glfwSetCursorPos` 在 GUI 抓取光标时不会改变 MC 的鼠标坐标，所以图上未能呈现。
+
 ## 核心页：加横向分割线（2.16.41）
 
 新增 `WandRow.Divider`（高 7px、1px 的 `Ui.DIVIDER` 线、跨整栏宽），插在「行为核心」那一行和两栏块之间；
