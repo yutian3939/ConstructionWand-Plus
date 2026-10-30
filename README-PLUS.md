@@ -28,6 +28,15 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心列表：描边颜色补 alpha、第一条不再被裁（2.16.45）
+
+- **为什么只有毁灭核心和建筑核心有描边**：各核心的 `getColor()` 返回的是**不含 alpha 的 RGB**（如 `ItemCoreTime.CORE_COLOR = 0x00E5FF`、
+  挖掘 `0x2ECC40`），alpha 位是 0，画出来完全透明；只有 `CoreDefault`（`-1`，纯白）和 `CoreDestruction`（`0xFFFF0000`）自带 alpha 才可见。
+  现在统一走 `Ui.fromCoreColor(...)`（补 `0xFF000000`，`0/-1` 时用主题强调色），所以每个核心都能看到自己的颜色；
+- **第一条描边被裁**：列表窗口的裁剪区原本从 `y+4` 开始，而描边画在 `entryY-1`，第一条正好压到裁剪边缘。现在列表内容从 `y+6` 开始、
+  裁剪区从 `y+4` 开始，留下 2px 余量，第一条的描边完整可见；`height()`/点击换算同步 +2。
+- 截图 `docs/wand-screen-cores.png`：选中的时间核心是**青色圆角描边**（不再是白色），悬浮的天使核心只有更亮的底板。
+
 ## 核心列表：描边贴合圆角、悬浮不再加描边（2.16.44）
 
 - `Ui.outline` 换成 `Ui.outlineRounded`：先按圆角画一圈核心色，再把内部用窗口底色（`Ui.BACKGROUND`）挖掉 1px，

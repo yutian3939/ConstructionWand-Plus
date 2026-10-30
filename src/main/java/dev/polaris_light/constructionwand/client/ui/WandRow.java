@@ -257,7 +257,7 @@ public abstract class WandRow
         @Override
         public int height() {
             Font font = Minecraft.getInstance().font;
-            return Math.max(viewport(), descriptionLines(font).size() * TEXT_LINE) + 8;
+            return Math.max(viewport() + 2, descriptionLines(font).size() * TEXT_LINE) + 8;
         }
 
         @Override
@@ -267,7 +267,8 @@ public abstract class WandRow
 
         @Override
         protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
-            int top = y + 4;
+            // Two pixels above the list, so the ring of the first entry is not cut by the window edge.
+            int top = y + 6;
             if(!scrolledToSelection) {
                 // Open the list on the entry in use, so the picked one is not hidden below the window.
                 scrolledToSelection = true;
@@ -279,7 +280,7 @@ public abstract class WandRow
             leftScroll = Math.min(leftScroll, maxScroll());
 
             // The list has a window of its own: entries scroll inside it, the description does not move.
-            graphics.enableScissor(x + 10, top, dividerX() - 6, top + viewport());
+            graphics.enableScissor(x + 10, y + 4, dividerX() - 6, top + viewport());
             for(int index = 0; index < entries.size(); index++) {
                 Entry entry = entries.get(index);
                 int entryY = top + index * lineStep() - leftScroll;
@@ -295,8 +296,9 @@ public abstract class WandRow
                 // The ring of the picked entry is drawn first and its middle cleared again, so it follows the
                 // rounded corners; the plate goes on top of that. A hovered entry only gets a brighter plate.
                 if(entry.selected()) {
+                    // The colours of the cores are plain RGB, so the ring has to be given its alpha here.
                     Ui.outlineRounded(graphics, left - 1, entryY - 1, columnWidth() + 2, ENTRY_HEIGHT + 2,
-                            entry.color());
+                            Ui.fromCoreColor(entry.color()));
                 }
                 Ui.rounded(graphics, left, entryY, columnWidth(), ENTRY_HEIGHT,
                         entry.selected() ? 0x2EFFFFFF : hovered ? 0x3CFFFFFF : 0x12FFFFFF);
@@ -323,7 +325,7 @@ public abstract class WandRow
         public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
             if(maxScroll() <= 0) return false;
             if(mouseX < x + 10 || mouseX >= dividerX() - 6) return false;
-            if(mouseY < y + 4 || mouseY > y + 4 + viewport()) return false;
+            if(mouseY < y + 6 || mouseY > y + 6 + viewport()) return false;
 
             int next = Mth.clamp(leftScroll - (int) Math.round(delta * lineStep()), 0, maxScroll());
             if(next == leftScroll) return false;
@@ -337,7 +339,7 @@ public abstract class WandRow
             // Only the left column is a list, the right one is the description.
             if(mouseX >= dividerX()) return false;
 
-            int offsetY = (int) (mouseY - (y + 4)) + leftScroll;
+            int offsetY = (int) (mouseY - (y + 6)) + leftScroll;
             if(offsetY < 0) return false;
 
             int index = offsetY / lineStep();
@@ -345,7 +347,7 @@ public abstract class WandRow
             // A click in the gap between two entries belongs to neither of them.
             if(offsetY % lineStep() > ENTRY_HEIGHT) return false;
             // A click below the window is outside the list that is drawn.
-            if(mouseY > y + 4 + viewport()) return false;
+            if(mouseY > y + 6 + viewport()) return false;
 
             onSelect.accept(index);
             return true;
