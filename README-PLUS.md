@@ -28,6 +28,20 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 核心页：第一行只显示，下面左右两栏（2.16.35）
+
+按标注图重做布局：
+
+- **第一行不变**：`行为核心  时间核心` —— 只显示当前核心，不再有 `‹ ›` 值框，也不再负责选择；
+- **下面分成左右两栏**（新控件 `WandRow.TwoColumn`）：左栏是**核心列表**（每个已装行为核心一行，带图标与名字，当前核心用 `Ui.OK` 高亮），
+  右栏是**描述**（当前核心的完整描述，按右栏宽度自动折行）；点左栏任意一行即选中该核心，SHIFT+左键卸下（`PacketRemoveCore`）；
+- **储存页（第 2 位）同理**：`物品核心  Storage Core` 一行 + 左栏物品核心列表 / 右栏描述，下面接原来的绑定信息
+  （`Bindings: 0/8`、`Not bound`、`Sneak right click a container to bind it` 等）；
+- 控件细节：列表行高 16（容纳 16px 图标），描述行高 10；点击按行高换算，右栏不响应点击；页脚提示改为
+  `Click a core to use it · Shift click a core to uninstall it`（新键 `gui.hint.select`）。
+
+截图：`docs/wand-screen-cores.png`、`docs/wand-screen-storage.png`。
+
 ## 核心页改为列表选择 + 储存页（2.16.34）
 
 - **核心页不再用「‹ 值 ›」循环选择**：改为 **核心列表**，每个已装的行为核心一行，点哪一行就选哪个（`selectCore` → `option.set(core)` + `PacketWandOption`），
