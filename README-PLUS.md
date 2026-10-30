@@ -28,6 +28,28 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：真正“解锁”世界层级、行的提示交还附魔台（2.16.59）
+
+**世界层级没真正解锁**：神化里“当前层级”与“已解锁层级”是两件事 —— 后者是一个**进度（advancement）**，
+`WorldTier.isUnlocked` 只查进度。所以只写 attachment 时，CTRL+T 界面会显示“顶点（已锁定）”。现在 `applyTier`
+除了写层级，还会**把到所选层级为止的所有层级进度都授予**玩家：
+
+```java
+for (int i = 0; i <= index; i++) {
+    var advancement = player.server.getAdvancements().get(tiers[i].getUnlockAdvancement());
+    if (advancement != null) player.getAdvancements().award(advancement, "code_triggered");
+}
+```
+
+这样界面会变成“已激活”，层级加成（含 `max_eterna` 最大位阶）也真正算数。
+
+**行提示**：`refreshRows` 之前把 `enchantClue/levelClue` 清成 -1，等于抹掉了附魔台自己算出来的那一行提示；
+现在只重写三行消耗（`costs`）并广播，提示文字仍由附魔台自己决定。
+
+**关于“附魔不了”**：位阶 100 时初始经验花费会到两千多点（需要 35 级），这是神化原本的曲线（高等级必然贵）；
+而且 `max_eterna` 属性会把位阶夹到你的上限（界面提示“附魔能力受限”）。层级解锁修好后，属性上限应随层级提高。
+如果仍然点不动附魔按钮，请告诉我：是**按钮灰着**、还是**点了没反应**、还是**提示等级不够**。
+
 ## 神化核心：世界层级只在右键时写，并且写得更硬（2.16.58）
 
 按需求把 2.16.57 的“滑条即时生效”退回：世界层级**只在右键固定附魔台那一刻**写入。

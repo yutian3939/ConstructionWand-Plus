@@ -85,6 +85,18 @@ public final class ApotheosisBridge
         if(WorldTier.getTier(player) != tier) {
             player.setData(Apoth.Attachments.WORLD_TIER, tier);
         }
+
+        // Having a tier and having unlocked it are two different things in Apotheosis: the unlock is an
+        // advancement, and without it the tier is marked as locked and never counts as one the player reached.
+        // The core is the way to reach a tier without the journey, so the advancements up to it are awarded.
+        for(int index2 = 0; index2 <= tiers.length - 1 && index2 <= Math.max(0, index); index2++) {
+            awardTier(player, tiers[index2]);
+        }
+    }
+
+    private static void awardTier(ServerPlayer player, WorldTier tier) {
+        var advancement = player.server.getAdvancements().get(tier.getUnlockAdvancement());
+        if(advancement != null) player.getAdvancements().award(advancement, "code_triggered");
     }
 
     /**
@@ -166,8 +178,6 @@ public final class ApotheosisBridge
         menu.random.setSeed(menu.enchantmentSeed.get());
         for(int slot = 0; slot < 3; slot++) {
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
-            menu.enchantClue[slot] = -1;
-            menu.levelClue[slot] = -1;
         }
         menu.broadcastChanges();
     }
