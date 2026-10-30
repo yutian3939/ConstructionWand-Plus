@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.polaris_light.constructionwand.plus.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityDefenseMixin",
+    "EntityDefenseMixin",
+    "PlayerAbilitiesRequestMixin"
+  ],
+  "client": [
+    "GameRendererDefenseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

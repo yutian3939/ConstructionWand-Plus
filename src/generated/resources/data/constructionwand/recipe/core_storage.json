@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " PG",
+    "PCP",
+    "GP "
+  ],
+  "key": {
+    "P": {
+      "tag": "c:glass_panes"
+    },
+    "G": {
+      "item": "minecraft:ender_pearl"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    }
+  },
+  "result": {
+    "id": "constructionwand:core_storage"
+  }
+}

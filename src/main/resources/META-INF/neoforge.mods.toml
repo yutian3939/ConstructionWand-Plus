@@ -1,0 +1,53 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+displayURL = "https://github.com/GLDYM/ConstructionWand-KOTS"
+logoFile = "icon.png"
+authors = "${mod_authors}"
+credits="ThetaDev for creating Construction Wand"
+description = '''
+${mod_description}
+'''
+
+# The defense upgrade guards damage that never passes an event, so the entity methods themselves are
+# injected into. See plus/mixin/*.
+[[mixins]]
+config = "constructionwand.mixins.json"
+
+# The slay core has to carry out the death of a target that guards its own, which needs the tail of the
+# vanilla death path.
+[[accessTransformers]]
+file = "META-INF/accesstransformer.cfg"
+
+[[dependencies.constructionwand]]
+modId = "neoforge"
+type = "required"
+versionRange = "${neo_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.constructionwand]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.constructionwand]]
+modId = "beyonddimensions"
+type = "optional"
+versionRange = "[0.7.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.constructionwand]]
+modId = "sable"
+type = "optional"
+versionRange = "[1.2.2,)"
+ordering = "AFTER"
+side = "BOTH"

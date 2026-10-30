@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "XGX",
+    "GFG",
+    "XGX"
+  ],
+  "key": {
+    "X": { "item": "minecraft:gold_block" },
+    "G": { "item": "minecraft:diamond_block" },
+    "F": { "item": "constructionwand:upgrade_fortune" }
+  },
+  "result": {
+    "id": "constructionwand:upgrade_super_fortune",
+    "count": 1
+  }
+}
