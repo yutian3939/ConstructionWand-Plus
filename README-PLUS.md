@@ -28,6 +28,18 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 修复：绑定列表的拖动排序（2.16.49）
+
+绑定行搬进右栏以后，`mouseClicked` 拿到的行是**两栏块**而不是绑定行，
+`row instanceof WandRow.Binding` 判断失败，`dragFrom` 永远设不上——所以拖拽排序失效了。
+
+- 新增 `hostedRow(row, x, y)`：若命中的是两栏块，就返回光标下真正的右栏行；
+  `mouseClicked` 用它解析后再判断「抓住绑定行」；
+- 新增 `allRows()`（页面所有行，含块内 extras）：拖动预览 `renderDragState` 与 `bindingRowAt` 都改用它，
+  高亮/落点线在块内也能正确显示；
+- 实测（探针模拟一次完整拖拽）：`hosted=Binding`、`dragFrom/dragTo 0→1`、松手后顺序由
+  `[x=9, x=11]` 变为 `[x=11, x=9]` ✔
+
 ## 储存页：ProjectE 核心显示玩家 EMC（2.16.48）
 
 `buildBindings()` 之前只处理了仓储核心与 ME 核心，ProjectE 核心落到「当前物品核心没有绑定」。现在补上第三个分支：

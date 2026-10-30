@@ -298,7 +298,7 @@ public class ScreenWand extends Screen
     private void renderDragState(GuiGraphics graphics) {
         if(dragFrom < 0 || dragTo < 0) return;
 
-        for(WandRow row : rows) {
+        for(WandRow row : allRows()) {
             if(row instanceof WandRow.Binding binding && binding.index == dragFrom) {
                 Ui.rounded(graphics, row.x, row.y, row.width, row.height(), 0x33FFFFFF);
             }
@@ -336,6 +336,9 @@ public class ScreenWand extends Screen
 
         WandRow row = rowAt(mouseX, mouseY);
         if(row == null) return true;
+        // Bindings live inside the block now: the row under the cursor may be one of its right hand rows.
+        WandRow hosted = hostedRow(row, mouseX, mouseY);
+        if(hosted != null) row = hosted;
 
         if(row.mouseClicked(mouseX, mouseY, button)) {
             activeRow = row;
@@ -1090,18 +1093,32 @@ public class ScreenWand extends Screen
      * @return the index of the binding row the mouse is over, or {@code -1}. Used while dragging, where a
      * position between two rows counts for the one above.
      */
+    /**
+     * @return the row of the page under the cursor, looking inside the two column block as well
+     */
+    private WandRow hostedRow(WandRow row, double mouseX, double mouseY) {
+        if(!(row instanceof WandRow.TwoColumn block)) return null;
+        for(WandRow extra : block.extras()) {
+            if(extra.contains(mouseX, mouseY)) return extra;
+        }
+        return null;
+    }
+
+    /**
+     * @return every row the page shows, the ones inside a two column block included
+     */
+    private List<WandRow> allRows() {
+        List<WandRow> all = new ArrayList<>();
+        for(WandRow row : rows) {
+            all.add(row);
+            if(row instanceof WandRow.TwoColumn block) all.addAll(block.extras());
+        }
+        return all;
+    }
+
     private int bindingRowAt(double mouseY) {
         int fallback = -1;
-        List<WandRow> candidates = new ArrayList<>();
-        for(WandRow row : rows) {
-            if(row instanceof WandRow.TwoColumn block) {
-                candidates.addAll(block.extras());
-            }
-            else {
-                candidates.add(row);
-            }
-        }
-        for(WandRow row : candidates) {
+        for(WandRow row : allRows()) {
             if(!(row instanceof WandRow.Binding binding)) continue;
             if(mouseY >= row.y && mouseY < row.y + row.height()) return binding.index;
             if(mouseY >= row.y) fallback = binding.index;
