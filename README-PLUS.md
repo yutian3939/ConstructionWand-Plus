@@ -28,6 +28,20 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：世界层级改为滑条即时生效（2.16.57）
+
+之前世界层级只在**右键固定附魔台**时才写进玩家，所以单纯拖滑条看不到任何变化。现在 `PacketApotheosis` 的服务端处理里
+在存好四项数值之后立刻 `ApotheosisBridge.applyTier(player, tier)`：
+
+```java
+if(ApotheosisLevels.setAll(wand, msg.tier(), msg.eterna(), msg.quanta(), msg.arcana())) { ... }
+// 世界层级属于玩家而不是附魔台，滑动即生效，不必等下一次右键
+if(ApotheosisBridge.isLoaded()) ApotheosisBridge.applyTier(player, msg.tier());
+```
+
+`WorldTier.setTier` 同时会移除旧层级、套用新层级的 TierAugment（其中就包括 `apothic_enchanting:max_eterna` 这个“最大位阶”属性），
+并把层级同步给客户端。右键固定附魔台时仍会再应用一次，保证二者一致。
+
 ## 神化核心：把附魔台自己的“重算”也按固定值做（2.16.56）
 
 上一版只在附魔台算完之后把数值写回去，于是**三行消耗与提示**仍按书架算出来的那一套，玩家看到的就是“数值恢复了”。
