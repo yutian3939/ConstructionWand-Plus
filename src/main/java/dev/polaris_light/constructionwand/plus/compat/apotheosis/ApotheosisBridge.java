@@ -1,6 +1,12 @@
 package dev.polaris_light.constructionwand.plus.compat.apotheosis;
 
 import java.util.List;
+import net.minecraft.world.item.enchantment.EnchantmentInstance;
+import net.minecraft.core.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.core.Registry;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.BlockPos;
@@ -218,11 +224,26 @@ public final class ApotheosisBridge
         // pinned; counting it up by hand would have made the next set of offers predictable.
         menu.enchantmentSeed.set(player.getEnchantmentSeed());
         menu.random.setSeed(menu.enchantmentSeed.get());
+        Registry<Enchantment> registry = player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
         for(int slot = 0; slot < 3; slot++) {
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
-            // The clue of a row is what the table found for it, and the screen shows it as "?" without one: the
-            // clues are left exactly as the table computed them, only the cost is written here.
             if(menu.costs[slot] < slot + 1) menu.costs[slot]++;
+
+            // The clue of a row is the enchantment the table would offer for it, and it is computed from the
+            // cost of that row. Leaving the clues of the table's own pass would show offers of the shelves, so
+            // the pass is repeated here with the pinned numbers, seeded exactly as the table seeds it.
+            menu.enchantClue[slot] = -1;
+            menu.levelClue[slot] = -1;
+            if(menu.costs[slot] > 0) {
+                menu.random.setSeed(menu.enchantmentSeed.get() + slot);
+                List<EnchantmentInstance> list = ApothEnchantmentHelper.selectEnchantment(menu.random, item,
+                        menu.costs[slot], stats, registry.asLookup());
+                if(list != null && !list.isEmpty()) {
+                    EnchantmentInstance data = list.remove(menu.random.nextInt(list.size()));
+                    menu.enchantClue[slot] = registry.getId(data.enchantment.value());
+                    menu.levelClue[slot] = data.level;
+                }
+            }
         }
         menu.broadcastChanges();
     }

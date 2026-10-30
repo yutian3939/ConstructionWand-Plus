@@ -28,6 +28,30 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：行提示改用固定数值重算（2.16.68）
+
+「永远显示效率 I」的原因：行提示（`enchantClue/levelClue`）是附魔台在 `slotsChanged` 里**用书架那套消耗**算出
+“该行会给出什么魔咒”的结果；而我只重写了 `costs`，没有重算提示 → 提示停在第 1 级，实际 roll 用的是固定值的高等级。
+
+现在 `refreshRows` 完整复刻它的提示计算：
+
+```java
+menu.costs[slot] = getEnchantmentCost(menu.random, slot, eterna, item);
+if (menu.costs[slot] < slot + 1) menu.costs[slot]++;
+menu.enchantClue[slot] = menu.levelClue[slot] = -1;
+if (menu.costs[slot] > 0) {
+    menu.random.setSeed(menu.enchantmentSeed.get() + slot);            // 与 getEnchantmentList 同一种子
+    var list = ApothEnchantmentHelper.selectEnchantment(menu.random, item, menu.costs[slot], stats, registry.asLookup());
+    if (list != null && !list.isEmpty()) {
+        var data = list.remove(menu.random.nextInt(list.size()));
+        menu.enchantClue[slot] = registry.getId(data.enchantment.value());
+        menu.levelClue[slot] = data.level;
+    }
+}
+```
+
+于是三行消耗与三行提示都由固定数值算出，和点击后真正附出来的东西一致。
+
 ## 神化核心：受限提示改用 modifier 抬到目标位阶（2.16.66）
 
 直接读了 Apothic 的界面源码，找到了那句提示的**确切条件**（`ApothEnchantmentScreen.java:305`）：
