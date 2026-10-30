@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " P ",
+    "SCH",
+    " A "
+  ],
+  "key": {
+    "P": {
+      "item": "minecraft:diamond_pickaxe"
+    },
+    "S": {
+      "item": "minecraft:diamond_shovel"
+    },
+    "H": {
+      "item": "minecraft:diamond_hoe"
+    },
+    "A": {
+      "item": "minecraft:diamond_axe"
+    },
+    "C": {
+      "item": "constructionwand:core_destruction"
+    }
+  },
+  "result": {
+    "item": "constructionwand:core_digging"
+  }
+}

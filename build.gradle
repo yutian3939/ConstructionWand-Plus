@@ -1,0 +1,216 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+    }
+}
+
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+version = "${mcversion}-${version_major}.${version_minor}${version_suffix}"
+group = "${author}.${modid}"
+archivesBaseName = "${modid}"
+
+// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+minecraft {
+    mappings channel: project.mcp_channel, version: project.mcp_mappings
+
+    // The slay core has to carry out the death of a target that guards its own, which needs the tail of
+    // the vanilla death path. See src/main/resources/META-INF/accesstransformer.cfg.
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    // This property allows configuring Gradle's ProcessResources task(s) to run on IDE output locations before launching the game.
+    // It is REQUIRED to be set to true for this template to function.
+    // See https://docs.gradle.org/current/dsl/org.gradle.language.jvm.tasks.ProcessResources.html
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file("run/client").canonicalPath
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            // property 'forge.enabledGameTestNamespaces', modid
+
+            // Loads the mixin config in a dev run. The released jar is found through the MixinConfigs
+            // entry in its manifest, which only the packaged game looks at.
+            property 'mixin.config', "${archivesBaseName}.mixins.json"
+
+            mods {
+                constructionwand {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file("run/server").canonicalPath
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            // property 'forge.enabledGameTestNamespaces', modid
+
+            // Loads the mixin config in a dev run, see the client run above.
+            property 'mixin.config', "${archivesBaseName}.mixins.json"
+
+            mods {
+                constructionwand {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        // This run config launches GameTestServer and runs all registered gametests, then exits.
+        // By default, the server will crash when no gametests are provided.
+        // The gametest system is also enabled by default for other run configs under the /test command.
+        gameTestServer {
+            workingDirectory project.file('run')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            property 'forge.logging.console.level', 'debug'
+
+            property 'forge.enabledGameTestNamespaces', modid
+
+            mods {
+                examplemod {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file("run/client").canonicalPath
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            args '--mod', archivesBaseName, '--all',
+                    '--existing', '"' + file('src/main/resources/') + '"',
+                    '--existing', '"' + file('src/generated/resources/') + '"',
+                    '--output', '"' + file('src/generated/resources/') + '"'
+
+            mods {
+                constructionwand {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+}
+
+repositories {
+    maven {
+        url = "https://maven.blamejared.com"
+    }
+    maven {
+        url = "https://maven.theillusivec4.top/"
+    }
+    maven {
+        url = "https://modmaven.dev/"
+    }
+    maven {
+        url = "https://maven.creeperhost.net/"
+    }
+    maven {
+        url = "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+}
+
+dependencies {
+    minecraft([
+            group  : "net.minecraftforge",
+            name   : "forge",
+            version: "${project.mcversion}-${project.forgeversion}"
+    ])
+
+    compileOnly fg.deobf("mezz.jei:jei-${mcversion}-common-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${mcversion}-forge-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${mcversion}-forge:${jei_version}")
+
+    compileOnly fg.deobf([
+            group: "vazkii.botania",
+            name: "Botania",
+            version: "${project.botania}",
+            classifier: "api"
+    ])
+
+    // Optional compatibility: Curios (trinket supply), AE2 (ME network supply) and ProjectE (EMC
+    // supply). All three are compile time only, the code checks at runtime whether the mod is there.
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${project.curios_version}:api")
+    compileOnly fg.deobf("appeng:appliedenergistics2-forge:${project.ae2_version}")
+    compileOnly fg.deobf("curse.maven:projecte-226410:${project.projecte_file_id}")
+}
+
+jar {
+    manifest {
+        attributes([
+                // Tells the game to apply the access transformer that is shipped in the jar, which the
+                // slay core needs to carry out the death of a target that guards its own.
+                "FMLAT": "accesstransformer.cfg",
+                // Same for the mixins, which are what makes the defense upgrade hold against damage that
+                // never passes an event.
+                "MixinConfigs": "${archivesBaseName}.mixins.json",
+                "Specification-Title": archivesBaseName,
+                "Specification-Vendor": "${author}",
+                "Specification-Version": "1", // We are version 1 of ourselves
+                "Implementation-Title": archivesBaseName,
+                "Implementation-Version": "${version}",
+                "Implementation-Vendor" :"${author}",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+// Example configuration to allow publishing using the maven-publish task
+// This is the preferred method to reobfuscate your jar file
+jar.finalizedBy('reobfJar') 
+// However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
+//publish.dependsOn('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file:///${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}

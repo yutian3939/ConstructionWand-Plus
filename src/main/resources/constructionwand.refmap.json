@@ -1,0 +1,12 @@
+{
+  "mappings": {
+    "net/minecraft/world/entity/LivingEntity": {
+      "hurt": "m_6469_",
+      "actuallyHurt": "m_6475_",
+      "setHealth": "m_21153_",
+      "die": "m_6667_",
+      "dropAllDeathLoot": "m_6668_"
+    }
+  },
+  "data": {}
+}

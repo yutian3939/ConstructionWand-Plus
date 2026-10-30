@@ -1,0 +1,36 @@
+{
+  "type": "forge:conditional",
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "forge:mod_loaded",
+          "modid": "projecte"
+        }
+      ],
+      "recipe": {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "pattern": [
+          " PG",
+          "PEP",
+          "GP "
+        ],
+        "key": {
+          "P": {
+            "tag": "forge:glass_panes"
+          },
+          "G": {
+            "item": "minecraft:glowstone_dust"
+          },
+          "E": {
+            "item": "minecraft:emerald"
+          }
+        },
+        "result": {
+          "item": "constructionwand:core_projecte"
+        }
+      }
+    }
+  ]
+}

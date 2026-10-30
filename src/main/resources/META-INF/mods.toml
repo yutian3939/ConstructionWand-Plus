@@ -1,0 +1,42 @@
+modLoader = "javafml"
+loaderVersion = "[46,)"
+license = "MIT License"
+[[mods]]
+modId="constructionwand"
+version="${file.jarVersion}"
+displayName="Construction Wand"
+displayURL="https://github.com/Theta-Dev/ConstructionWand"
+logoFile="logo.png"
+authors="ThetaDev"
+description='''
+Construction Wands make building easier!
+
+With a Construction Wand you can place multiple blocks (up to 1024) at once, extending your build on the side you're
+facing. If that's not enough: you can upgrade your wand with additional cores, allowing you to place a block
+behind the block you are facing, conjure blocks in mid air or destroy lots of blocks very fast.
+
+This 1.20.1 build also ports the ConstructionWand-Plus content: the digging core (keeps the drops, with silk touch,
+fortune and auto smelting), the storage core (build from the containers bound to the wand), the slay core (instant
+kills) and the fortune, auto smelting, flight and defense upgrades, plus fluid handling, undo improvements and a
+richer wand screen.
+
+This is my first minecraft mod. May the odds be ever in your favor.
+'''
+[[dependencies.constructionwand]]
+    modId="forge"
+mandatory = true
+versionRange = "[46,)"
+ordering = "NONE"
+    side="BOTH"
+[[dependencies.constructionwand]]
+    modId="minecraft"
+mandatory = true
+versionRange = "[1.20, 1.21)"
+ordering = "NONE"
+    side="BOTH"
+
+# The optional integrations (Curios, AE2, ProjectE) are deliberately NOT declared here.
+# Their version numbers do not follow the Minecraft version (ProjectE ships 1.0.1 on 1.20.1,
+# Curios uses 5.4.7+1.20.1), so a version range would refuse to load the game on a mismatch even
+# though the integration is optional. The code checks ModList at runtime instead and silently
+# falls back to the plain wand behaviour when the other mod is missing.

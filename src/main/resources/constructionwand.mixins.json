@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "thetadev.constructionwand.plus.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "constructionwand.refmap.json",
+  "mixins": [
+    "LivingEntityDefenseMixin",
+    "EntityDefenseMixin",
+    "GoetyFlightGuardMixin",
+    "PlayerAbilitiesRequestMixin"
+  ],
+  "client": [
+    "GameRendererDefenseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
