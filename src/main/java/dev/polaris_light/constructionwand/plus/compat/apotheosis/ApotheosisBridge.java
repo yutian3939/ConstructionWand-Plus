@@ -227,15 +227,37 @@ public final class ApotheosisBridge
         menu.enchantmentSeed.set(player.getEnchantmentSeed());
         menu.random.setSeed(menu.enchantmentSeed.get());
         // The third row of a table can also be an infusion, and whether one is offered depends on the recipe the
-        // item matches and on the room around the table. That row is left exactly as the table computed it, so an
-        // infusion is never offered where its conditions are not met.
-        boolean infusion = InfusionRecipe.findItemMatch(player.level(), item) != null;
+        // The third row of a table can also be an infusion, and the wand decides whether its conditions are met:
+        // the recipe is matched against the pinned numbers instead of the room, so an infusion appears exactly
+        // when the values the wand was set to are enough for it.
+        InfusionRecipe itemMatch = InfusionRecipe.findItemMatch(player.level(), item);
+        InfusionRecipe valueMatch = itemMatch == null ? null
+                : InfusionRecipe.findMatch(player.level(), item, eterna, stats.quanta(), stats.arcana());
 
         Registry<Enchantment> registry = player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT);
         for(int slot = 0; slot < 3; slot++) {
-            if(slot == 2 && infusion) continue;
+            if(slot == 2 && itemMatch != null && valueMatch == null) {
+                // An infusion item whose recipe the pinned numbers do not satisfy: no row is offered at all.
+                menu.costs[slot] = 0;
+                menu.enchantClue[slot] = -1;
+                menu.levelClue[slot] = -1;
+                continue;
+            }
+
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
             if(menu.costs[slot] < slot + 1) menu.costs[slot]++;
+
+            if(slot == 2 && valueMatch != null) {
+                // The infusion row costs what its recipe asks for, not what the rank asks for.
+                menu.costs[slot] = Math.min(menu.costs[slot],
+                        Math.max((int) Math.ceil(valueMatch.getRequirements().eterna()), 3));
+                var infusionHolder = player.level().holderOrThrow(Ench.Enchantments.INFUSION);
+                menu.enchantClue[slot] = registry.getId(infusionHolder.value());
+                menu.levelClue[slot] = 1;
+                PacketDistributor.sendToPlayer(player, new CluePayload(slot,
+                        List.of(new EnchantmentInstance(infusionHolder, 1)), false));
+                continue;
+            }
 
             // The clue of a row is the enchantment the table would offer for it, and it is computed from the
             // cost of that row. Leaving the clues of the table's own pass would show offers of the shelves, so

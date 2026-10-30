@@ -28,6 +28,31 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：灌注按手杖数值判定（2.16.71）
+
+上一版把灌注行整个交回附魔台，结果是“条件不满足也能点”的反面——这次按需求让它**完全按手杖数值判定**：
+
+```java
+InfusionRecipe itemMatch  = InfusionRecipe.findItemMatch(level, item);              // 物品是否匹配某灌注
+InfusionRecipe valueMatch = itemMatch == null ? null
+        : InfusionRecipe.findMatch(level, item, eterna, stats.quanta(), stats.arcana());  // 手杖数值是否满足
+
+if (slot == 2 && itemMatch != null && valueMatch == null) {   // 数值不够 → 不出现该行
+    menu.costs[slot] = 0;  menu.enchantClue[slot] = -1;  menu.levelClue[slot] = -1;
+    continue;
+}
+if (slot == 2 && valueMatch != null) {                        // 数值够 → 按配方要求定价，并把灌注提示发过去
+    menu.costs[slot] = Math.min(menu.costs[slot], Math.max((int) Math.ceil(valueMatch.getRequirements().eterna()), 3));
+    menu.enchantClue[slot] = registry.getId(infusionHolder.value());
+    menu.levelClue[slot] = 1;
+    PacketDistributor.sendToPlayer(player, new CluePayload(slot, List.of(new EnchantmentInstance(infusionHolder, 1)), false));
+    continue;
+}
+```
+
+即：灌注的**条件**用你固定的位阶/量子化/阿卡那去匹配配方，满足才出现该行、不满足就整行不出现；
+价格仍按配方自身的要求（不会被高等级位阶哄抬）。
+
 ## 神化核心：行提示改用固定数值重算（2.16.68）
 
 「永远显示效率 I」的原因：行提示（`enchantClue/levelClue`）是附魔台在 `slotsChanged` 里**用书架那套消耗**算出
