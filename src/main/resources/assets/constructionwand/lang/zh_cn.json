@@ -226,6 +226,7 @@
   "constructionwand.gui.core.behaviour": "行为核心",
   "constructionwand.gui.core.material": "物品核心",
   "constructionwand.gui.hint.change": "左键切换",
+  "constructionwand.gui.hint.select": "左键点选核心",
   "constructionwand.gui.hint.core_cycle": "左键在已装核心之间切换",
   "constructionwand.gui.hint.core_cycle_removable": "左键切换核心，SHIFT+左键卸下当前核心",
   "constructionwand.gui.hint.core_removable": "SHIFT+左键卸下核心",

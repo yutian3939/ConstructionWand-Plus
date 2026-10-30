@@ -242,6 +242,7 @@
   "constructionwand.gui.core.behaviour": "Behaviour core",
   "constructionwand.gui.core.material": "Material core",
   "constructionwand.gui.hint.change": "Click to change",
+  "constructionwand.gui.hint.select": "Click a core to use it",
   "constructionwand.gui.hint.core_cycle": "Click to switch between the installed cores",
   "constructionwand.gui.hint.core_cycle_removable": "Click to switch between the installed cores, shift click to uninstall this one",
   "constructionwand.gui.hint.core_removable": "Shift click a core to uninstall it",

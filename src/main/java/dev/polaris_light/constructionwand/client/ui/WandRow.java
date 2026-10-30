@@ -1,8 +1,10 @@
 package dev.polaris_light.constructionwand.client.ui;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
@@ -122,6 +124,92 @@ public abstract class WandRow
         return font.plainSubstrByWidth(value, Math.max(0, available - 6)) + "\u2026";
     }
 
+    /**
+     * A block that is split in two: a list to pick from on the left and the description of what is picked
+     * on the right. The usual label-and-value row cannot say that, so this row draws both columns itself
+     * and turns a click into the line it landed on.
+     */
+    public static class TwoColumn extends WandRow
+    {
+        /**
+         * @param icon     the icon of the entry, or {@code null} for one without
+         * @param label    what the entry is called
+         * @param selected whether it is the one in use, which is what the colour marks
+         */
+        public record Entry(@Nullable ItemStack icon, Component label, boolean selected) {
+        }
+
+        /** The list needs room for the icon of a line, the description does not. */
+        private static final int LIST_LINE = 16;
+        private static final int TEXT_LINE = 10;
+
+        private final List<Entry> entries;
+        private final Component description;
+        private final IntConsumer onSelect;
+
+        public TwoColumn(List<Entry> entries, Component description, IntConsumer onSelect) {
+            this.entries = entries;
+            this.description = description;
+            this.onSelect = onSelect;
+        }
+
+        private int listWidth() {
+            return Math.max(60, (width - 24) / 2);
+        }
+
+        private int descriptionX() {
+            return x + 12 + listWidth() + 16;
+        }
+
+        private int descriptionWidth() {
+            return Math.max(40, right() - descriptionX());
+        }
+
+        private List<FormattedCharSequence> descriptionLines(Font font) {
+            return font.split(description, descriptionWidth());
+        }
+
+        @Override
+        public int height() {
+            Font font = Minecraft.getInstance().font;
+            int list = entries.size() * LIST_LINE;
+            int text = descriptionLines(font).size() * TEXT_LINE;
+            return Math.max(list, text) + 8;
+        }
+
+        @Override
+        protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
+            int top = y + 4;
+            for(int index = 0; index < entries.size(); index++) {
+                Entry entry = entries.get(index);
+                int lineY = top + index * LIST_LINE;
+                if(entry.icon() != null && !entry.icon().isEmpty()) {
+                    graphics.renderItem(entry.icon(), x + 10, lineY - 4);
+                }
+                Ui.text(graphics, font, trim(font, entry.label(), listWidth() - 24), labelX(entry.icon()),
+                        lineY + 4, entry.selected() ? Ui.OK : Ui.TEXT);
+            }
+
+            int descriptionTop = y + 6;
+            for(FormattedCharSequence line : descriptionLines(font)) {
+                graphics.drawString(font, line, descriptionX(), descriptionTop, Ui.TEXT_DIM, false);
+                descriptionTop += TEXT_LINE;
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if(button != 0 || !contains(mouseX, mouseY)) return false;
+            // The right half is the description, not a list; only the left column picks something.
+            if(mouseX >= descriptionX() - 8) return false;
+
+            int index = (int) ((mouseY - (y + 4)) / LIST_LINE);
+            if(index < 0 || index >= entries.size()) return false;
+
+            onSelect.accept(index);
+            return true;
+        }
+    }
     /**
      * A section heading inside the list, with the remaining width underlined once.
      */

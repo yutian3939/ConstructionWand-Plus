@@ -424,14 +424,9 @@ public class ScreenWand extends Screen
         // The list is the selector: every installed core is a row, and clicking one selects it. Cycling
         // through a value box needed as many clicks as the wanted core was far away in the order, which
         // stops working once a wand carries a handful of cores.
-        rows.add(new WandRow.Header(text("gui.section.core_list")));
-        addCoreList(wandOptions.cores);
-        rows.add(new WandRow.Paragraph(text("gui.status.description"),
-                translate(wandOptions.cores.getDescTranslation())));
-
-        rows.add(new WandRow.Header(text("gui.section.status")));
-        rows.add(new WandRow.Text(text("gui.status.behaviour"),
-                coreName(wandOptions.cores, wandOptions.cores.get()), Ui.TEXT, true, null));
+        rows.add(new WandRow.Text(text("gui.core.behaviour"),
+                coreName(wandOptions.cores, wandOptions.cores.get()), Ui.OK, false, null));
+        rows.add(corePicker(wandOptions.cores));
     }
 
     /**
@@ -439,10 +434,9 @@ public class ScreenWand extends Screen
      * to. The two belong together, a storage core without its bound containers has nothing to give.
      */
     private void buildStorage() {
-        rows.add(new WandRow.Header(text("gui.section.material_list")));
-        addCoreList(wandOptions.materialCores);
-        rows.add(new WandRow.Paragraph(text("gui.status.description"),
-                translate(wandOptions.materialCores.getDescTranslation())));
+        rows.add(new WandRow.Text(text("gui.core.material"),
+                coreName(wandOptions.materialCores, wandOptions.materialCores.get()), Ui.OK, false, null));
+        rows.add(corePicker(wandOptions.materialCores));
         buildBindings();
     }
 
@@ -450,14 +444,14 @@ public class ScreenWand extends Screen
      * One row per installed core, the chosen one marked. A shift click uninstalls that core, the hint in the
      * footer says so.
      */
-    private void addCoreList(WandUpgradesSelectable<IWandCore> option) {
+    private WandRow corePicker(WandUpgradesSelectable<IWandCore> option) {
         IWandCore selected = option.get();
+        List<WandRow.TwoColumn.Entry> entries = new ArrayList<>();
         for(IWandCore core : option.getUpgrades()) {
-            boolean chosen = core == selected;
-            rows.add(new WandRow.Cycle(coreIcon(core), coreName(option, core), coreDesc(option, core),
-                    chosen ? text("gui.selected") : Component.empty(), true,
-                    chosen ? null : text("gui.core.select_hint"), false, false, back -> selectCore(option, core)));
+            entries.add(new WandRow.TwoColumn.Entry(coreIcon(core), coreName(option, core), core == selected));
         }
+        return new WandRow.TwoColumn(entries, translate(option.getDescTranslation()),
+                index -> selectCore(option, option.getUpgrades().get(index)));
     }
 
     private void selectCore(WandUpgradesSelectable<IWandCore> option, IWandCore core) {
@@ -941,10 +935,9 @@ public class ScreenWand extends Screen
 
     private Component footerHint() {
         return switch(tab) {
-            case CORES -> text("gui.hint.change").copy().append(" · ").append(text("gui.hint.core_removable"));
+            case CORES, STORAGE -> text("gui.hint.select").copy().append(" · ").append(text("gui.hint.core_removable"));
             case OPTIONS -> text("gui.hint.change");
             case UPGRADES -> text("upgrade.toggle_hint");
-            case STORAGE -> isStorageCore() ? text("gui.hint.drag_remove") : text("gui.hint.world_bind");
         };
     }
 
