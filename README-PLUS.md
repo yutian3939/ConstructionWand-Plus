@@ -28,6 +28,34 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 修复：拖世界层级滑条崩溃（2.16.54）
+
+崩溃报告 `错误报告-10-30-2026_20.16.20` 的根因：
+
+```
+java.lang.UnsupportedOperationException: Payload constructionwand:apotheosis_levels may not be sent to the server!
+  at ModMessages.sendToServer(ModMessages.java:51)
+  at ScreenWand.lambda$apotheosisTier$10(ScreenWand.java:714)
+  at WandRow$Slider.mouseReleased(WandRow.java:844)
+```
+
+`PacketApotheosis` **从来没有在 `ModMessages.registerPayloads` 里注册**（当初打补丁时锚点没匹配上，静默漏掉了），
+于是松开滑条的那一刻 NeoForge 拒绝发送未注册的 serverbound 载荷，直接在 `mouseReleased` 里抛异常把游戏崩掉。
+
+修复：补上注册
+
+```java
+registrar.playToServer(PacketApotheosis.ID, PacketApotheosis.CODEC, PacketApotheosis.Handler::handle);
+```
+
+**验证**（客户端调 `ModMessages.sendToServer(new PacketApotheosis(4, 61, 62, 63))`，服务端读回）：
+
+```
+PROBE server sees tier=4 eterna=61 quanta=62 arcana=63 (want 4/61/62/63)
+```
+
+不再抛异常，四个值都写进了服务端法杖。
+
 ## 神化核心：右键改为「取消点击 + 固定数值」（2.16.53）
 
 按需求改掉上一版的“不取消点击、按 tick 临时写回”：

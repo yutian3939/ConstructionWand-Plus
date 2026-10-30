@@ -42,6 +42,11 @@ public final class ModMessages {
         registrar.playToServer(PacketTimeAccelerate.ID, PacketTimeAccelerate.CODEC,
                 PacketTimeAccelerate.Handler::handle);
         registrar.playToServer(PacketWandLimit.ID, PacketWandLimit.CODEC, PacketWandLimit.Handler::handle);
+        // The four numbers of the apotheosis core. Without this line the client is told the payload may not be
+        // sent to the server, which throws on the first slider release.
+        registrar.playToServer(dev.polaris_light.constructionwand.plus.network.PacketApotheosis.ID,
+                dev.polaris_light.constructionwand.plus.network.PacketApotheosis.CODEC,
+                dev.polaris_light.constructionwand.plus.network.PacketApotheosis.Handler::handle);
         registrar.playToServer(PacketSuperFortune.ID, PacketSuperFortune.CODEC,
                 PacketSuperFortune.Handler::handle);
         registrar.playToServer(PacketUndoRequest.ID, PacketUndoRequest.CODEC, PacketUndoRequest.Handler::handle);
