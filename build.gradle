@@ -76,6 +76,10 @@ repositories {
         url = "https://maven.theillusivec4.top/"
     }
     maven {
+        name = 'Shadowsoffire'
+        url = 'https://maven.shadowsoffire.dev/releases'
+    }
+    maven {
         name = 'CurseMaven'
         url = 'https://cursemaven.com'
     }
@@ -102,6 +106,10 @@ dependencies {
     compileOnly "curse.maven:beyond-dimensions-1222890:${beyond_dimensions_fileid}"
     compileOnly "curse.maven:occultism-361026:7336033"
     compileOnly "curse.maven:projecte-226410:6611984"
+    compileOnly "dev.shadowsoffire:Apotheosis:${mc_version}-${apotheosis_version}"
+    compileOnly "dev.shadowsoffire:ApothicEnchanting:${mc_version}-${apothic_enchanting_version}"
+    compileOnly "dev.shadowsoffire:Placebo:${mc_version}-${placebo_version}"
+    compileOnly "dev.shadowsoffire:ApothicAttributes:${mc_version}-${apothic_attributes_version}"
 }
 
 tasks.named('processResources', ProcessResources).configure {

@@ -28,6 +28,7 @@ import dev.polaris_light.constructionwand.wand.action.ActionAngel;
 import dev.polaris_light.constructionwand.wand.action.ActionConstruction;
 import dev.polaris_light.constructionwand.wand.action.ActionDestruction;
 import dev.polaris_light.constructionwand.plus.wand.ActionDigging;
+import dev.polaris_light.constructionwand.plus.wand.ActionApotheosis;
 import dev.polaris_light.constructionwand.plus.wand.ActionSlay;
 import dev.polaris_light.constructionwand.plus.wand.ActionTime;
 import dev.polaris_light.constructionwand.plus.basics.ExtraWandOption;
@@ -46,6 +47,9 @@ import dev.polaris_light.constructionwand.plus.material.ContainerBinding;
 import dev.polaris_light.constructionwand.plus.network.PacketBoundContainer;
 import dev.polaris_light.constructionwand.plus.network.PacketExtraOption;
 import dev.polaris_light.constructionwand.plus.network.PacketRemoveCore;
+import dev.polaris_light.constructionwand.plus.basics.ApotheosisLevels;
+import dev.polaris_light.constructionwand.plus.compat.apotheosis.ApotheosisBridge;
+import dev.polaris_light.constructionwand.plus.network.PacketApotheosis;
 import dev.polaris_light.constructionwand.plus.network.PacketSuperFortune;
 import dev.polaris_light.constructionwand.plus.network.PacketTimeClear;
 import dev.polaris_light.constructionwand.plus.network.PacketRemoveUpgrade;
@@ -554,6 +558,15 @@ public class ScreenWand extends Screen
             own.add(superFortuneSlider());
             own.add(extraCycle(ExtraWandOption.SLAY_ALL_LOOT));
         }
+        else if(action instanceof ActionApotheosis) {
+            // The four numbers of an enchanting table: the world tier of Apotheosis and the three stats of
+            // Apothic Enchanting. They are written onto a table with a right click, see ApotheosisCoreEvents.
+            own.add(apotheosisTier());
+            own.add(apotheosisStat("option.apoth_eterna", ApotheosisLevels.eterna(wand), ApotheosisLevels::setEterna));
+            own.add(apotheosisStat("option.apoth_quanta", ApotheosisLevels.quanta(wand), ApotheosisLevels::setQuanta));
+            own.add(apotheosisStat("option.apoth_arcana", ApotheosisLevels.arcana(wand), ApotheosisLevels::setArcana));
+            own.add(new WandRow.Paragraph(Component.empty(), text("gui.info.apotheosis_how")));
+        }
         else if(action instanceof ActionTime) {
             // Both settings of the time core are picked right here, which is what replaced clicking the
             // same block over and over to raise its multiplier.
@@ -684,6 +697,42 @@ public class ScreenWand extends Screen
             ModMessages.sendToServer(new PacketSuperFortune(value));
             refresh();
         });
+    }
+
+    /**
+     * The world tier of Apotheosis, as a slider over the tiers that exist. The name of the tier is read from
+     * Apotheosis itself, so a tier added by a future version shows up without a change here.
+     */
+    private WandRow apotheosisTier() {
+        return new WandRow.Slider(text("option.apoth_tier"), this::apotheosisTierName,
+                0, ApotheosisLevels.TIERS - 1, ApotheosisLevels.tier(wand), true,
+                text("option.apoth_tier.desc"), value -> {
+            ApotheosisLevels.setTier(wand, value);
+            ModMessages.sendToServer(apotheosisPacket());
+            refresh();
+        });
+    }
+
+    private Component apotheosisTierName(int tier) {
+        return text("apoth.tier." + ApotheosisBridge.tierName(tier));
+    }
+
+    /**
+     * One of the three stats of the table, from zero to a hundred. The wand only stores them: a right click on
+     * a table is what writes them onto it.
+     */
+    private WandRow apotheosisStat(String key, int current, java.util.function.BiConsumer<ItemStack, Integer> setter) {
+        return new WandRow.Slider(text(key), shown -> Component.literal(String.valueOf(shown)),
+                0, ApotheosisLevels.STAT_MAX, current, true, text(key + ".desc"), value -> {
+            setter.accept(wand, value);
+            ModMessages.sendToServer(apotheosisPacket());
+            refresh();
+        });
+    }
+
+    private PacketApotheosis apotheosisPacket() {
+        return new PacketApotheosis(ApotheosisLevels.tier(wand), ApotheosisLevels.eterna(wand),
+                ApotheosisLevels.quanta(wand), ApotheosisLevels.arcana(wand));
     }
 
     private void buildUpgrades() {

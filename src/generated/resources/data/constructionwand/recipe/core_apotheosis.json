@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "apotheosis"
+    },
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "apothic_enchanting"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " G ",
+    "GEG",
+    " G "
+  ],
+  "key": {
+    "G": {
+      "item": "apotheosis:gem_dust"
+    },
+    "E": {
+      "item": "minecraft:enchanting_table"
+    }
+  },
+  "result": {
+    "id": "constructionwand:core_apotheosis"
+  }
+}

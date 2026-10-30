@@ -28,6 +28,51 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 新核心：神化核心（2.16.50）
+
+与 **Apotheosis 1.21**（世界层级、宝石粉）和 **Apothic Enchanting 1.21**（附魔台、位阶/量子化/阿卡那）联动的行为核心。
+
+**注册**：`PlusItems.CORE_APOTHEOSIS = registerIfAllLoaded("core_apotheosis", {"apotheosis", "apothic_enchanting"}, ...)`，
+两个 mod 都在才存在；所有引用这两个 mod 类型的代码集中在 `plus/compat/apotheosis/ApotheosisBridge.java`，只有核心存在时才可能被类加载
+（做法与 ProjectE 的 `EmcAccess` 相同）。
+
+**四个数值**（存在法杖 `custom_data`，默认 位阶 30 / 量子化 15 / 阿卡那 0 / 世界层级 0）：
+
+| 选项 | 范围 | 作用 |
+|---|---|---|
+| 世界层级 | 0–4（HAVEN/FRONTIER/ASCENT/SUMMIT/PINNACLE） | 右键时用 `WorldTier.setTier(player, tier)` 写入，同时让神化重算层级加成（含“最大位阶”） |
+| 位阶（Eterna） | 0–100 | 写入附魔台，决定可用魔咒等级 |
+| 量子化（Quanta） | 0–100 | 写入附魔台，调节威力浮动 |
+| 阿卡那（Arcana） | 0–100 | 写入附魔台，让稀有魔咒更常见 |
+
+**选项页**：选中神化核心后，四个滑条取代原来的通用设置；滑条与 `PacketApotheosis` 同步，服务端负责 clamp。
+
+**右键附魔台**：`ApotheosisCoreEvents` 在 `PlayerInteractEvent.RightClickBlock` 里识别
+`state.getBlock() instanceof EnchantingTableBlock`（原版附魔台在运行期被神化换成了它的子类，所以原版 / 神化桌 / 乌鸦桌一次判定全覆盖），
+不取消点击（桌面照常打开），随后 `ServerTickEvent` 在桌面打开期间每 tick 把数值写上去：
+
+```java
+EnchantmentTableStats base = EnchantmentTableStats.gatherStats(level, pos);
+menu.setStats(new EnchantmentTableStats(eterna, quanta, arcana,
+        base.clues(), base.blacklist(), base.treasure(), base.stable()));
+```
+
+之所以按 tick 重写：玩家往槽里放物品会触发 `slotsChanged → gatherStats()`，把数值覆盖回书架算出的原值；一分钟内持续写回可以保证
+“放物品 → 点按钮”这段过程里数值始终是我们设定的。书架的线索数、黑名单、宝藏标记与稳定性仍来自房间本身，只替换三个数值。
+
+**配方**（`core_apotheosis.json`，用 `neoforge:mod_loaded` 条件，缺 mod 时静默跳过）：
+
+```
+ G
+GEG
+ G
+```
+`G` = `apotheosis:gem_dust`（宝石粉），`E` = `minecraft:enchanting_table`。
+
+**验证**：`gradlew build` 通过；`gradlew runServer`（未装这两个 mod 的环境）→ `Done`、1306 配方、无异常，说明核心与配方都能在缺少依赖时安全缺席。
+
+**下一步**：接入 `enchantinginfuser` 的两个注入器（它只有“位阶”一个入口，走它自己的 `EnchantingBehavior`）。
+
 ## 修复：绑定列表的拖动排序（2.16.49）
 
 绑定行搬进右栏以后，`mouseClicked` 拿到的行是**两栏块**而不是绑定行，

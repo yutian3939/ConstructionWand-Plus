@@ -39,6 +39,7 @@ import dev.polaris_light.constructionwand.plus.basics.WandLimit;
 import dev.polaris_light.constructionwand.plus.basics.TimeCoreLevels;
 import dev.polaris_light.constructionwand.plus.compat.ae2.AeGridAccess;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreAE;
+import dev.polaris_light.constructionwand.plus.items.ItemCoreApotheosis;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreSlay;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreTime;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreStorage;
@@ -133,6 +134,13 @@ public abstract class ItemWand extends Item implements ICustomItemModel
             return true;
         }
         return false;
+    }
+
+    /**
+     * @return whether the wand carries the apotheosis core, which writes enchanting numbers onto tables
+     */
+    public static boolean isApotheosisCore(ItemStack stack) {
+        return WandOptions.isWand(stack) && new WandOptions(stack).cores.get() instanceof ItemCoreApotheosis;
     }
 
     public static boolean isSlayCore(ItemStack stack) {

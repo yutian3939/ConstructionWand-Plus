@@ -26,6 +26,9 @@ public final class PlusItems
     public static final DeferredHolder<Item, Item> CORE_DIGGING = ITEMS.register("core_digging", () -> new ItemCoreDigging(propUpgrade()));
     public static final DeferredHolder<Item, Item> CORE_SLAY = ITEMS.register("core_slay", () -> new ItemCoreSlay(propUpgrade()));
     public static final DeferredHolder<Item, Item> CORE_TIME = ITEMS.register("core_time", () -> new ItemCoreTime(propUpgrade()));
+    // Optional core: only exists while both Apotheosis and Apothic Enchanting are installed.
+    public static final DeferredHolder<Item, Item> CORE_APOTHEOSIS = registerIfAllLoaded("core_apotheosis",
+            new String[]{"apotheosis", "apothic_enchanting"}, () -> new ItemCoreApotheosis(propUpgrade()));
 
     // Material cores
     // The storage core carries its own binding; the other two only stand for a compatibility module of
@@ -50,7 +53,8 @@ public final class PlusItems
             () -> new ItemWandUpgrade(ConstructionWand.MODID + ".upgrade.upgrade_defense.desc", propUpgrade()));
 
     public static final DeferredHolder<Item, Item>[] WANDS = ModItems.WANDS;
-    public static final DeferredHolder<Item, Item>[] BEHAVIOUR_CORES = new DeferredHolder[]{ModItems.CORE_ANGEL, ModItems.CORE_DESTRUCTION, CORE_DIGGING, CORE_SLAY, CORE_TIME};
+    public static final DeferredHolder<Item, Item>[] BEHAVIOUR_CORES = new DeferredHolder[]{ModItems.CORE_ANGEL,
+            ModItems.CORE_DESTRUCTION, CORE_DIGGING, CORE_SLAY, CORE_TIME, CORE_APOTHEOSIS};
     public static final DeferredHolder<Item, Item>[] MATERIAL_CORES = new DeferredHolder[]{CORE_STORAGE, CORE_AE, CORE_PROJECTE};
     public static final DeferredHolder<Item, Item>[] UPGRADES = new DeferredHolder[]{UPGRADE_FORTUNE,
             UPGRADE_SUPER_FORTUNE, UPGRADE_AUTO_SMELT, UPGRADE_FLIGHT, UPGRADE_DEFENSE};
@@ -86,6 +90,18 @@ public final class PlusItems
     private static DeferredHolder<Item, Item> registerIfLoaded(String name, String modId,
                                                                java.util.function.Supplier<Item> factory) {
         if(ModList.get() == null || !ModList.get().isLoaded(modId)) return null;
+        return ITEMS.register(name, factory);
+    }
+
+    /**
+     * @return the registered item, or {@code null} while any of the mods is missing
+     */
+    private static DeferredHolder<Item, Item> registerIfAllLoaded(String name, String[] modIds,
+                                                                 java.util.function.Supplier<Item> factory) {
+        if(ModList.get() == null) return null;
+        for(String modId : modIds) {
+            if(!ModList.get().isLoaded(modId)) return null;
+        }
         return ITEMS.register(name, factory);
     }
 
