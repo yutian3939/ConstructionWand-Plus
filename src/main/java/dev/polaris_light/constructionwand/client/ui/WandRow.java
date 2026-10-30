@@ -141,6 +141,27 @@ public abstract class WandRow
     }
 
     /**
+     * A plain horizontal line, drawn across the whole content width. It separates the head of a page (the
+     * core in use) from the body (the list and its description).
+     */
+    public static class Divider extends WandRow
+    {
+        @Override
+        public int height() {
+            return 7;
+        }
+
+        @Override
+        protected boolean background() {
+            return false;
+        }
+
+        @Override
+        protected void renderRow(GuiGraphics graphics, Font font, int labelColor) {
+            Ui.rounded(graphics, x, y + 3, width, 1, Ui.DIVIDER);
+        }
+    }
+    /**
      * A block of the page split in two, with a divider between them: the entries to pick from on the left,
      * the description of what is picked on the right.
      * <p>

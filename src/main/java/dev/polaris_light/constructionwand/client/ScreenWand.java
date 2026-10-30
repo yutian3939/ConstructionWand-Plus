@@ -429,6 +429,7 @@ public class ScreenWand extends Screen
         // through a value box needed as many clicks as the wanted core was far away in the order, which
         // stops working once a wand carries a handful of cores.
         rows.add(selectedCoreRow(text("gui.core.behaviour"), wandOptions.cores));
+        rows.add(new WandRow.Divider());
         rows.add(corePicker(wandOptions.cores, roomLeft(0)));
     }
 
@@ -438,6 +439,7 @@ public class ScreenWand extends Screen
      */
     private void buildStorage() {
         rows.add(selectedCoreRow(text("gui.core.material"), wandOptions.materialCores));
+        rows.add(new WandRow.Divider());
         rows.add(corePicker(wandOptions.materialCores, roomLeft(0)));
         buildBindings();
     }
