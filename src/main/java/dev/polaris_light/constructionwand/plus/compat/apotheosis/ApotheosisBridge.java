@@ -181,6 +181,10 @@ public final class ApotheosisBridge
         if(eterna < 1.5F) eterna = 1.5F;
 
         menu.setStats(stats);
+        // The seed of a table is the one of the player, which the game advances with a fresh random number
+        // after every enchantment. Reading it here keeps the offers as random as a table that was never
+        // pinned; counting it up by hand would have made the next set of offers predictable.
+        menu.enchantmentSeed.set(player.getEnchantmentSeed());
         menu.random.setSeed(menu.enchantmentSeed.get());
         for(int slot = 0; slot < 3; slot++) {
             menu.costs[slot] = ApothEnchantmentHelper.getEnchantmentCost(menu.random, slot, eterna, item);
@@ -189,10 +193,6 @@ public final class ApotheosisBridge
             if(menu.costs[slot] < slot + 1) menu.costs[slot]++;
         }
         menu.broadcastChanges();
-
-        // The table rolls its three rows from a seed it moves on between offers. Keeping the seed here as well
-        // means a pinned table does not hand out the very same rows for the same item over and over.
-        menu.enchantmentSeed.set(menu.enchantmentSeed.get() + 1);
     }
 
     /**

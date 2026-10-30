@@ -28,6 +28,24 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 神化核心：种子改用玩家自己的附魔种子（2.16.62）
+
+2.16.61 里我用 `enchantmentSeed + 1` 让报价“前进”，这不合适：
+
+- 原版随机性的来源是 **玩家** 的 `enchantmentSeed`，每次附魔后由 `Player.onEnchantmentPerformed` 用
+  `random.nextInt()` 换成一个**新的随机数**；附魔台只是把它当种子用；
+- 手动 `+1` 等于给出一条可推演的序列（知道当前种子就能算出下一组报价），既不符合原版，也削弱随机性。
+
+因此改成：
+
+```java
+menu.enchantmentSeed.set(player.getEnchantmentSeed());   // 与原版同一个来源
+menu.random.setSeed(menu.enchantmentSeed.get());
+```
+
+于是：同一件物品在同一座台子上，**没附魔之前报价不变**（这就是原版行为），附完一次后玩家种子换成新随机数，
+下一组报价随之变化。随机性与可预测性都由原版规则决定，没有额外削弱。
+
 ## 神化核心：三行重算与附魔台自己一致，并让种子前进（2.16.61）
 
 - `refreshRows` 现在完整照抄附魔台自己的那一步：`getEnchantmentCost` → `enchantClue/levelClue = -1` →
