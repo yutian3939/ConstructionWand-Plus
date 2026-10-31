@@ -28,6 +28,19 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 指令：游戏内设置加速上限（2.16.77）
+
+新增（权限等级 2，需 OP）：
+
+```
+/cwand active            → 查看当前上限
+/cwand active <0-4096>   → 设置上限（0 = 不限）
+/constructionwand active ...  ← 同上，长名也可用
+```
+
+- 写入 `[time] maxActivePerPlayer` 后立即 `SPEC.save()`，服务器重启后仍生效；
+- 与已有的 `/cwand limit <n>`（储存核心的绑定容器上限）并列，两者风格一致。
+
 ## 时间核心：不再顶掉之前加速的方块（2.16.76）
 
 原因是一个隐藏上限：`[time] maxActivePerPlayer` 默认只有 **16**，而 `evictOldest(...)` 在超限时会把**最早那个**加速直接删掉——

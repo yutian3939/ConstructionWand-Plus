@@ -27,6 +27,8 @@ public final class PlusCommands
         event.getDispatcher().register(limitCommand("constructionwand"));
         // Short alias, like the 1.12.2 version had.
         event.getDispatcher().register(limitCommand("cwand"));
+        event.getDispatcher().register(activeCommand("constructionwand"));
+        event.getDispatcher().register(activeCommand("cwand"));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> limitCommand(String name) {
@@ -51,6 +53,32 @@ public final class PlusCommands
                                     CommandSourceStack source = context.getSource();
                                     source.sendSuccess(() -> Component.translatable(
                                             ConstructionWand.MODID + ".command.limit.set", describe(value)), true);
+                                    return 1;
+                                })));
+    }
+
+    /**
+     * Sets how many blocks one player may hold accelerated, which is the guard the time core keeps. Zero means
+     * no limit; the change is written back to the server configuration, so it survives a restart.
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> activeCommand(String name) {
+        return Commands.literal(name)
+                .then(Commands.literal("active")
+                        .requires(source -> source.hasPermission(2))
+                        .executes(context -> {
+                            context.getSource().sendSuccess(() -> Component.translatable(
+                                    ConstructionWand.MODID + ".command.active.show",
+                                    describe(ConfigServer.TIME_CORE_MAX_ACTIVE.get())), false);
+                            return 1;
+                        })
+                        .then(Commands.argument("value", IntegerArgumentType.integer(0, 4096))
+                                .executes(context -> {
+                                    int value = IntegerArgumentType.getInteger(context, "value");
+                                    ConfigServer.TIME_CORE_MAX_ACTIVE.set(value);
+                                    ConfigServer.SPEC.save();
+                                    CommandSourceStack source = context.getSource();
+                                    source.sendSuccess(() -> Component.translatable(
+                                            ConstructionWand.MODID + ".command.active.set", describe(value)), true);
                                     return 1;
                                 })));
     }
