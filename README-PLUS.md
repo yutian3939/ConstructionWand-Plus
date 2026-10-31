@@ -28,6 +28,15 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 界面：储存与选项标签互换、未安装强化不再显示其设置（2.16.74）
+
+- 标签顺序改为 **核心 / 选项 / 储存 / 升级**（`Tab` 枚举里把 `OPTIONS` 与 `STORAGE` 互换）；
+- `强化时运` 的滑条只在**装了该强化**时出现：
+  ```java
+  if (PassiveUpgrades.hasSuperFortune(wand)) own.add(superFortuneSlider());
+  ```
+  破坏/秒杀两条分支都加了判断，没装的强化不会再冒出它的设置项。
+
 ## 神化核心：灌注按手杖数值判定（2.16.71）
 
 上一版把灌注行整个交回附魔台，结果是“条件不满足也能点”的反面——这次按需求让它**完全按手杖数值判定**：

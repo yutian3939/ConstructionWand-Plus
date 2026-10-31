@@ -95,8 +95,8 @@ public class ScreenWand extends Screen
     private enum Tab
     {
         CORES("cores"),
-        STORAGE("storage"),
         OPTIONS("options"),
+        STORAGE("storage"),
         UPGRADES("upgrades");
 
         private final String key;
@@ -556,7 +556,8 @@ public class ScreenWand extends Screen
             own.add(limitSlider(true));
             own.add(extraCycle(ExtraWandOption.SILK_TOUCH));
             own.add(extraCycle(ExtraWandOption.DROPS_DESTINATION));
-            own.add(superFortuneSlider());
+            // The slider belongs to an upgrade: without it there is nothing to set, so it is not offered.
+            if(PassiveUpgrades.hasSuperFortune(wand)) own.add(superFortuneSlider());
             own.add(extraCycle(ExtraWandOption.SLAY_ALL_LOOT));
         }
         else if(action instanceof ActionApotheosis) {
@@ -604,7 +605,7 @@ public class ScreenWand extends Screen
         else if(action instanceof ActionDigging) {
             own.add(extraCycle(ExtraWandOption.SILK_TOUCH));
             own.add(extraCycle(ExtraWandOption.DROPS_DESTINATION));
-            own.add(superFortuneSlider());
+            if(PassiveUpgrades.hasSuperFortune(wand)) own.add(superFortuneSlider());
             own.add(extraCycle(ExtraWandOption.FLUID_REMOVAL));
             own.add(extraCycle(ExtraWandOption.FLUID_STORAGE));
         }
