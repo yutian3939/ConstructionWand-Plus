@@ -21,8 +21,7 @@ import dev.polaris_light.constructionwand.basics.ConfigServer;
  *   <li>{@code /cwand storage bindings <count>} - how many containers the storage core may hold a binding for;</li>
  *   <li>{@code /cwand time maxblocks <count>} - how many blocks one player may hold accelerated at once.</li>
  * </ul>
- * The older names ({@code /cwand limit}, {@code /cwand active}) are kept as aliases, so an existing script or
- * a habit does not break.
+ * There are deliberately no short aliases: a name that does not say what it limits is what this replaced.
  */
 @EventBusSubscriber(modid = ConstructionWand.MODID)
 public final class PlusCommands
@@ -37,15 +36,7 @@ public final class PlusCommands
         event.getDispatcher().register(timeCommand("constructionwand"));
         event.getDispatcher().register(timeCommand("cwand"));
 
-        // The names this feature used before it grew a group of its own.
-        event.getDispatcher().register(Commands.literal("constructionwand")
-                .then(bindingLimit("limit")));
-        event.getDispatcher().register(Commands.literal("cwand")
-                .then(bindingLimit("limit")));
-        event.getDispatcher().register(Commands.literal("constructionwand")
-                .then(activeLimit("active")));
-        event.getDispatcher().register(Commands.literal("cwand")
-                .then(activeLimit("active")));
+
     }
 
     /**

@@ -28,6 +28,17 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 指令：去掉旧名别名（2.16.79）
+
+`/cwand limit` 与 `/cwand active` 已**移除**，只留含义明确的两条：
+
+```
+/cwand storage bindings [<数量>]   # 储存核心最多可绑定的容器数（1–4096）
+/cwand time maxblocks  [<数量>]   # 每名玩家可同时加速的方块数（0 = 不限，0–4096）
+```
+
+（`/constructionwand …` 长名同样可用。）
+
 ## 指令改名：按“限制什么”分组（2.16.78）
 
 `/cwand limit` 与 `/cwand active` 看不出限制的是什么，改成按功能分组的名字：
