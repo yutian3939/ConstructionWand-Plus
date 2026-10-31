@@ -12,9 +12,17 @@ import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.basics.ConfigServer;
 
 /**
- * Runtime configuration of the storage core's bind limit, so a server operator can raise or lower it
- * without editing the configuration file. The value is written back through the Forge config system,
- * which persists it and syncs it to clients.
+ * Runtime configuration of the two limits of the wand, so an operator can change them without editing the
+ * configuration file. The values are written back through the config system, which persists them.
+ * <p>
+ * The commands are named after what they limit rather than after the field they write, and they are grouped
+ * under the part of the wand they belong to:
+ * <ul>
+ *   <li>{@code /cwand storage bindings <count>} - how many containers the storage core may hold a binding for;</li>
+ *   <li>{@code /cwand time maxblocks <count>} - how many blocks one player may hold accelerated at once.</li>
+ * </ul>
+ * The older names ({@code /cwand limit}, {@code /cwand active}) are kept as aliases, so an existing script or
+ * a habit does not break.
  */
 @EventBusSubscriber(modid = ConstructionWand.MODID)
 public final class PlusCommands
@@ -24,67 +32,82 @@ public final class PlusCommands
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(limitCommand("constructionwand"));
-        // Short alias, like the 1.12.2 version had.
-        event.getDispatcher().register(limitCommand("cwand"));
-        event.getDispatcher().register(activeCommand("constructionwand"));
-        event.getDispatcher().register(activeCommand("cwand"));
-    }
+        event.getDispatcher().register(storageCommand("constructionwand"));
+        event.getDispatcher().register(storageCommand("cwand"));
+        event.getDispatcher().register(timeCommand("constructionwand"));
+        event.getDispatcher().register(timeCommand("cwand"));
 
-    private static LiteralArgumentBuilder<CommandSourceStack> limitCommand(String name) {
-        return Commands.literal(name)
-                .then(Commands.literal("limit")
-                        .requires(source -> source.hasPermission(2))
-                        .executes(context -> {
-                            context.getSource().sendSuccess(() -> Component.translatable(
-                                    ConstructionWand.MODID + ".command.limit.show", describe(ConfigServer.MAX_BOUND_CONTAINERS.get())), false);
-                            return 1;
-                        })
-                        .then(Commands.argument("value", IntegerArgumentType.integer(-1, 4096))
-                                .executes(context -> {
-                                    int value = IntegerArgumentType.getInteger(context, "value");
-                                    if(value == 0) {
-                                        context.getSource().sendFailure(Component.translatable(
-                                                ConstructionWand.MODID + ".command.usage"));
-                                        return 0;
-                                    }
-                                    ConfigServer.MAX_BOUND_CONTAINERS.set(value);
-                                    ConfigServer.SPEC.save();
-                                    CommandSourceStack source = context.getSource();
-                                    source.sendSuccess(() -> Component.translatable(
-                                            ConstructionWand.MODID + ".command.limit.set", describe(value)), true);
-                                    return 1;
-                                })));
+        // The names this feature used before it grew a group of its own.
+        event.getDispatcher().register(Commands.literal("constructionwand")
+                .then(bindingLimit("limit")));
+        event.getDispatcher().register(Commands.literal("cwand")
+                .then(bindingLimit("limit")));
+        event.getDispatcher().register(Commands.literal("constructionwand")
+                .then(activeLimit("active")));
+        event.getDispatcher().register(Commands.literal("cwand")
+                .then(activeLimit("active")));
     }
 
     /**
-     * Sets how many blocks one player may hold accelerated, which is the guard the time core keeps. Zero means
-     * no limit; the change is written back to the server configuration, so it survives a restart.
+     * {@code /cwand storage bindings [count]} - the containers the storage core may be bound to.
      */
-    private static LiteralArgumentBuilder<CommandSourceStack> activeCommand(String name) {
+    private static LiteralArgumentBuilder<CommandSourceStack> storageCommand(String name) {
         return Commands.literal(name)
-                .then(Commands.literal("active")
-                        .requires(source -> source.hasPermission(2))
+                .then(Commands.literal("storage")
+                        .then(bindingLimit("bindings")));
+    }
+
+    /**
+     * {@code /cwand time maxblocks [count]} - the blocks one player may hold accelerated at once.
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> timeCommand(String name) {
+        return Commands.literal(name)
+                .then(Commands.literal("time")
+                        .then(activeLimit("maxblocks")));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> bindingLimit(String literal) {
+        return Commands.literal(literal)
+                .requires(source -> source.hasPermission(2))
+                .executes(context -> {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            ConstructionWand.MODID + ".command.bindings.show",
+                            describe(ConfigServer.MAX_BOUND_CONTAINERS.get())), false);
+                    return 1;
+                })
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 4096))
                         .executes(context -> {
+                            int value = IntegerArgumentType.getInteger(context, "count");
+                            ConfigServer.MAX_BOUND_CONTAINERS.set(value);
+                            ConfigServer.SPEC.save();
                             context.getSource().sendSuccess(() -> Component.translatable(
-                                    ConstructionWand.MODID + ".command.active.show",
-                                    describe(ConfigServer.TIME_CORE_MAX_ACTIVE.get())), false);
+                                    ConstructionWand.MODID + ".command.bindings.set", describe(value)), true);
                             return 1;
-                        })
-                        .then(Commands.argument("value", IntegerArgumentType.integer(0, 4096))
-                                .executes(context -> {
-                                    int value = IntegerArgumentType.getInteger(context, "value");
-                                    ConfigServer.TIME_CORE_MAX_ACTIVE.set(value);
-                                    ConfigServer.SPEC.save();
-                                    CommandSourceStack source = context.getSource();
-                                    source.sendSuccess(() -> Component.translatable(
-                                            ConstructionWand.MODID + ".command.active.set", describe(value)), true);
-                                    return 1;
-                                })));
+                        }));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> activeLimit(String literal) {
+        return Commands.literal(literal)
+                .requires(source -> source.hasPermission(2))
+                .executes(context -> {
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                            ConstructionWand.MODID + ".command.maxblocks.show",
+                            describe(ConfigServer.TIME_CORE_MAX_ACTIVE.get())), false);
+                    return 1;
+                })
+                .then(Commands.argument("count", IntegerArgumentType.integer(0, 4096))
+                        .executes(context -> {
+                            int value = IntegerArgumentType.getInteger(context, "count");
+                            ConfigServer.TIME_CORE_MAX_ACTIVE.set(value);
+                            ConfigServer.SPEC.save();
+                            context.getSource().sendSuccess(() -> Component.translatable(
+                                    ConstructionWand.MODID + ".command.maxblocks.set", describe(value)), true);
+                            return 1;
+                        }));
     }
 
     private static Object describe(int value) {
-        if(value <= 0) return Component.translatable(ConstructionWand.MODID + ".command.limit.unlimited");
+        if(value <= 0) return Component.translatable(ConstructionWand.MODID + ".command.unlimited");
         return value;
     }
 }

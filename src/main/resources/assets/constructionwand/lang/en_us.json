@@ -333,5 +333,10 @@
   "constructionwand.gui.apoth.infuser_pinned": "Pinned: this infuser works at rank %s (sneak right click to remove)",
   "constructionwand.time.limited": "You already hold %s accelerated blocks, which is the limit; let some go first",
   "constructionwand.command.active.show": "Accelerated blocks per player: %s",
-  "constructionwand.command.active.set": "Accelerated blocks per player set to: %s (0 = no limit)"
+  "constructionwand.command.active.set": "Accelerated blocks per player set to: %s (0 = no limit)",
+  "constructionwand.command.bindings.show": "Containers the storage core may bind: %s",
+  "constructionwand.command.bindings.set": "Storage core binding limit set to: %s",
+  "constructionwand.command.maxblocks.show": "Blocks one player may hold accelerated: %s",
+  "constructionwand.command.maxblocks.set": "Accelerated block limit set to: %s (0 = unlimited)",
+  "constructionwand.command.unlimited": "unlimited"
 }

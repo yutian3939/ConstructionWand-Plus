@@ -313,5 +313,10 @@
   "constructionwand.gui.apoth.infuser_pinned": "已固定：这座附魔注入器的位阶为 %s（潜行右键取消）",
   "constructionwand.time.limited": "同时加速的方块已达上限（%s 个），先解除一些再加",
   "constructionwand.command.active.show": "同时加速上限：%s",
-  "constructionwand.command.active.set": "同时加速上限已设为：%s（0 = 不限）"
+  "constructionwand.command.active.set": "同时加速上限已设为：%s（0 = 不限）",
+  "constructionwand.command.bindings.show": "储存核心最多可绑定的容器数：%s",
+  "constructionwand.command.bindings.set": "储存核心绑定上限已设为：%s",
+  "constructionwand.command.maxblocks.show": "每名玩家可同时加速的方块数：%s",
+  "constructionwand.command.maxblocks.set": "同时加速上限已设为：%s（0 = 不限）",
+  "constructionwand.command.unlimited": "不限"
 }
