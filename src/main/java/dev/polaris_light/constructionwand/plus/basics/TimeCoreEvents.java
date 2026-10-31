@@ -205,7 +205,8 @@ public final class TimeCoreEvents
             }
             case INVALID -> player.displayClientMessage(Component.translatable(key + "invalid",
                     block.getName()).withStyle(ChatFormatting.GRAY), true);
-            case DISABLED -> player.displayClientMessage(Component.translatable(key + "disabled")
+            case LIMITED -> player.displayClientMessage(Component.translatable(key + "limited",
+                            ConfigServer.TIME_CORE_MAX_ACTIVE.get())
                     .withStyle(ChatFormatting.RED), true);
         }
     }

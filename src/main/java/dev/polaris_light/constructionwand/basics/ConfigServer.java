@@ -308,7 +308,7 @@ public class ConfigServer
                 "the whole feature away.");
         builder.comment("How many blocks one player may keep accelerated at once. The oldest one gives way.",
                 "Set 0 for no limit.");
-        TIME_CORE_MAX_ACTIVE = builder.defineInRange("maxActivePerPlayer", 16, 0, 4096);
+        TIME_CORE_MAX_ACTIVE = builder.defineInRange("maxActivePerPlayer", 256, 0, 4096);
         builder.comment("How many blocks one connected click (ctrl + right click) may accelerate at most.");
         TIME_CORE_CONNECTED_LIMIT = builder.defineInRange("connectedLimit", 256, 1, 4096);
         builder.comment("Blocks the time core refuses to accelerate. Format: modid:block, or a plain modid",

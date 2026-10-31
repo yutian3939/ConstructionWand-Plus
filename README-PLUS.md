@@ -28,6 +28,21 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 时间核心：不再顶掉之前加速的方块（2.16.76）
+
+原因是一个隐藏上限：`[time] maxActivePerPlayer` 默认只有 **16**，而 `evictOldest(...)` 在超限时会把**最早那个**加速直接删掉——
+所以第 17 个方块一加速，最早的就不见了。
+
+现在：
+
+- **默认值 16 → 256**（`defineInRange("maxActivePerPlayer", 256, 0, 4096)`）；
+- **不再淘汰旧方块**：达到上限时拒绝新的那一个，并在动作栏提示「同时加速的方块已达上限（N 个），先解除一些再加」
+  ```java
+  if (!entries.containsKey(pos) && owned(entries, player.getUUID()) >= maxActive())
+      return new Outcome(Result.LIMITED, 0, 0);
+  ```
+- 新增 `Result.LIMITED` 与 `constructionwand.time.limited` 文案；`maxActivePerPlayer = 0` 仍然表示不限。
+
 ## 界面：必定掉落并入强化时运（2.16.75）
 
 「强制掉落所有战利品」(`slay_all_loot`) 本来也是**强化时运**的一部分，之前它单独显示在秒杀核心的选项里。现在：

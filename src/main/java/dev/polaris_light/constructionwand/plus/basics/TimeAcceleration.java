@@ -104,7 +104,9 @@ public final class TimeAcceleration
         /** the block cannot be accelerated at all */
         INVALID,
         /** the time core is switched off on this server */
-        DISABLED
+        DISABLED,
+        /** the player already holds as many accelerated blocks as the server allows */
+        LIMITED
     }
 
     /**
@@ -178,7 +180,10 @@ public final class TimeAcceleration
         if(!isAccelerable(level, pos, state)) return new Outcome(Result.INVALID, 0, 0);
 
         Map<BlockPos, Stored> entries = ACTIVE.computeIfAbsent(level.dimension(), key -> new LinkedHashMap<>());
-        if(!entries.containsKey(pos)) evictOldest(entries, player.getUUID());
+        // Nothing is dropped for the new one: a player who is at the limit is told so, instead of silently
+        // losing a block they were watching. The limit is only a guard against runaway numbers.
+        if(!entries.containsKey(pos) && owned(entries, player.getUUID()) >= maxActive())
+            return new Outcome(Result.LIMITED, 0, 0);
         // The heading is the direction the player faces right now, rounded to one of the four sides: the
         // readout on the top of the block is written to be read from there and keeps that side for as long
         // as the effect lasts.
@@ -401,26 +406,22 @@ public final class TimeAcceleration
     }
 
     /**
-     * Keeps one player from holding an unbounded number of blocks accelerated. The oldest one of that
-     * player gives way, which is the one they are least likely to still be watching.
+     * @return how many blocks that player holds accelerated right now
      */
-    private static void evictOldest(Map<BlockPos, Stored> entries, UUID owner) {
-        int max = ConfigServer.TIME_CORE_MAX_ACTIVE.get();
-        if(max <= 0) return;
-
-        int owned = 0;
+    private static int owned(Map<BlockPos, Stored> entries, UUID owner) {
+        int count = 0;
         for(Stored entry : entries.values()) {
-            if(entry.owner().equals(owner)) owned++;
+            if(entry.owner().equals(owner)) count++;
         }
-        if(owned < max) return;
+        return count;
+    }
 
-        Iterator<Map.Entry<BlockPos, Stored>> blocks = entries.entrySet().iterator();
-        while(blocks.hasNext()) {
-            if(blocks.next().getValue().owner().equals(owner)) {
-                blocks.remove();
-                return;
-            }
-        }
+    /**
+     * @return the highest number of blocks one player may hold, where zero or less means no limit
+     */
+    private static int maxActive() {
+        int max = ConfigServer.TIME_CORE_MAX_ACTIVE.get();
+        return max <= 0 ? Integer.MAX_VALUE : max;
     }
 
     /**
