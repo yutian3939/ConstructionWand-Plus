@@ -557,8 +557,11 @@ public class ScreenWand extends Screen
             own.add(extraCycle(ExtraWandOption.SILK_TOUCH));
             own.add(extraCycle(ExtraWandOption.DROPS_DESTINATION));
             // The slider belongs to an upgrade: without it there is nothing to set, so it is not offered.
-            if(PassiveUpgrades.hasSuperFortune(wand)) own.add(superFortuneSlider());
-            own.add(extraCycle(ExtraWandOption.SLAY_ALL_LOOT));
+            if(PassiveUpgrades.hasSuperFortune(wand)) {
+                own.add(superFortuneSlider());
+                // The guaranteed drop is part of the same upgrade, so it is offered with it and not before.
+                own.add(extraCycle(ExtraWandOption.SLAY_ALL_LOOT));
+            }
         }
         else if(action instanceof ActionApotheosis) {
             // The four numbers of an enchanting table: the world tier of Apotheosis and the three stats of

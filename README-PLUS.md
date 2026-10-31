@@ -28,6 +28,23 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 界面：必定掉落并入强化时运（2.16.75）
+
+「强制掉落所有战利品」(`slay_all_loot`) 本来也是**强化时运**的一部分，之前它单独显示在秒杀核心的选项里。现在：
+
+- 选项页：它和倍率滑条一起，只在装了强化时运时出现
+  ```java
+  if (PassiveUpgrades.hasSuperFortune(wand)) {
+      own.add(superFortuneSlider());
+      own.add(extraCycle(ExtraWandOption.SLAY_ALL_LOOT));
+  }
+  ```
+- 行为侧：读取该设置时也要求装有强化时运，没装时该项即使被写进数据也不生效
+  ```java
+  this.allLoot = PassiveUpgrades.hasSuperFortune(wand)
+          && ExtraWandOption.getDisplayIndex(wand, ExtraWandOption.SLAY_ALL_LOOT) == 1;
+  ```
+
 ## 界面：储存与选项标签互换、未安装强化不再显示其设置（2.16.74）
 
 - 标签顺序改为 **核心 / 选项 / 储存 / 升级**（`Tab` 枚举里把 `OPTIONS` 与 `STORAGE` 互换）；

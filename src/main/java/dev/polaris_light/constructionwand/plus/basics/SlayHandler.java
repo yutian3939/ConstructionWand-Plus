@@ -446,7 +446,9 @@ public final class SlayHandler
             this.autoSmelt = PassiveUpgrades.hasAutoSmelt(wand);
             this.silkTouch = ExtraWandOption.isSilkTouch(wand);
             this.looting = PassiveUpgrades.hasFortune(wand) ? PassiveUpgrades.fortuneLevel() : 0;
-            this.allLoot = ExtraWandOption.getDisplayIndex(wand, ExtraWandOption.SLAY_ALL_LOOT) == 1;
+            // The guaranteed drop belongs to the super fortune upgrade: without it the setting means nothing.
+            this.allLoot = PassiveUpgrades.hasSuperFortune(wand)
+                    && ExtraWandOption.getDisplayIndex(wand, ExtraWandOption.SLAY_ALL_LOOT) == 1;
         }
     }
 
