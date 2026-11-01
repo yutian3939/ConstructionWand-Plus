@@ -28,6 +28,28 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 必定掉落：补上事件型掉落（Mystical Agradditions，2.16.80）
+
+`mysticalagradditions` 的「凋灵灵魂碎片」不是战利品表给的，而是它的死亡事件里硬编码概率：
+
+```java
+// MobDropsHandler.onLivingDrops
+if (entity instanceof WitherBoss && Math.random() < witheringSoulChance)   // 默认 0.35
+    drops.add(new ItemStack(ModItems.WITHERING_SOUL.get()));
+if (entity instanceof EnderDragon && dragonScalesAmount > 0)
+    drops.add(new ItemStack(ModItems.DRAGON_SCALE.get(), dragonScalesAmount));
+```
+
+战利品表遍历看不到这种掉落，所以“必定掉落”对它无效。新增 `SpecialDeathDrops`：按 **mod + 实体类型** 手工登记这类掉落，
+只按**物品 id** 解析（`BuiltInRegistries.ITEM`），没有编译期依赖，没装这个 mod 时列表自然为空：
+
+- 凋灵（`WitherBoss`）→ `mysticalagradditions:withering_soul` ×1
+- 末影龙（`EnderDragon`）→ `mysticalagradditions:dragon_scale` ×8（与该 mod 默认配置一致）
+
+`SlayHandler.dropEveryPossibleItem` 会把它们并入遍历结果（按物品去重），于是“必定掉落所有战利品”对这两项也生效。
+
+以后要兼容别的 mod，只需在 `SpecialDeathDrops.forVictim` 里加一行。
+
 ## 指令：去掉旧名别名（2.16.79）
 
 `/cwand limit` 与 `/cwand active` 已**移除**，只留含义明确的两条：

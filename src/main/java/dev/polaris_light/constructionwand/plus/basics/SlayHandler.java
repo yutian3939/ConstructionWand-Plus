@@ -261,6 +261,18 @@ public final class SlayHandler
 
         LootTable table = level.getServer().reloadableRegistries().getLootTable(victim.getLootTable());
         List<ItemStack> found = LootTableWalk.possible(level, table);
+        // Some mods hand their drops out from a death handler instead of a loot table; those are added here, or
+        // the wand would silently skip them.
+        for(ItemStack extra : SpecialDeathDrops.forVictim(victim)) {
+            boolean known = false;
+            for(ItemStack stack : found) {
+                if(ItemStack.isSameItemSameComponents(stack, extra)) {
+                    known = true;
+                    break;
+                }
+            }
+            if(!known) found.add(extra);
+        }
         if(found.isEmpty()) return;
 
         DigSnapshot.multiplyDrops(found, SuperFortuneLevels.multiplier(context.wand));
