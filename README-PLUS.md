@@ -28,6 +28,23 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 必定掉落：通用读取战利品表注入（2.16.82）
+
+不再逐个写兼容：新增 `LootModifierWalk`，直接扫描数据包里的全局战利品修改器
+（`data/<namespace>/loot_modifiers/**.json`，1.21 里它们注册的是 `MapCodec`，**拿不到实例**，只能读原始 JSON）：
+
+- `add_item` 类 → 读 `items` / `item` 里的物品 id；
+- 注入型（如 `reliquary:inject_loot`）→ 读 `loot_table`（要注入的表）并**递归交给 `LootTableWalk`**；
+- 条件只作**过滤**：`neoforge:loot_table_id` / `loot_table` / `loot_table_id` 与受害者的战利品表比对，
+  `entity_properties.predicate.type` 与实体类型比对；两者都没有的修改器视为对所有实体生效。
+  这样“给爬行者的注入”不会被套到牛身上。
+
+解析结果按服务器缓存（`ServerStarted` 时清空），击杀时零 IO。已删除 Reliquary 的专用兼容 —— 它的
+`entities/creeper.json` 正是这种注入（`loot_table: reliquary:inject/entities/creeper` + `neoforge:loot_table_id`），
+现在由通用路径覆盖，从而拿到风暴之眼。
+
+`SpecialDeathDrops` 现在只保留**真正的代码型**两条（Mystical Agradditions 的凋灵灵魂碎片、龙鳞）。
+
 ## 必定掉落：补 Reliquary 风暴之眼；秒杀核心能打末影龙并加长手臂（2.16.81）
 
 **Reliquary 的风暴之眼**：它被注入到**带电爬行者**的战利品注入里（`EntityLootInjectSubProvider`，`reliquary_powered_creeper_` 0.03/0.05/0.15），

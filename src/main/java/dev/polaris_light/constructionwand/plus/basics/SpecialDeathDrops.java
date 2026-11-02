@@ -6,7 +6,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
-import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -37,11 +36,6 @@ public final class SpecialDeathDrops
         List<ItemStack> found = new ArrayList<>();
         if(ModList.get() == null) return found;
 
-        // Reliquary: the eye of the storm is added to a powered creeper by a loot injection, which the walk of
-        // the plain loot table does not see.
-        if(isLoaded("reliquary") && victim instanceof Creeper creeper && creeper.isPowered()) {
-            add(found, "reliquary:eye_of_the_storm", 1);
-        }
 
         // Mystical Agradditions: the withering soul drops from a wither at a chance written into its handler,
         // and the dragon scale is added the same way when a dragon dies.

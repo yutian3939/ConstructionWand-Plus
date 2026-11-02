@@ -261,6 +261,10 @@ public final class SlayHandler
 
         LootTable table = level.getServer().reloadableRegistries().getLootTable(victim.getLootTable());
         List<ItemStack> found = LootTableWalk.possible(level, table);
+        // What other mods inject into the loot of a mob is not part of its table: it is read from the data pack
+        // instead so it is handed out as well.
+        found.addAll(LootModifierWalk.injected(level, victim));
+
         // Some mods hand their drops out from a death handler instead of a loot table; those are added here, or
         // the wand would silently skip them.
         for(ItemStack extra : SpecialDeathDrops.forVictim(victim)) {
