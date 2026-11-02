@@ -129,6 +129,15 @@ public abstract class ItemWand extends Item implements ICustomItemModel
     public boolean onLeftClickEntity(@Nonnull ItemStack stack, @Nonnull Player player, @Nonnull net.minecraft.world.entity.Entity entity) {
         if(player.level().isClientSide) return false;
         // Left clicking a creature with the slay core kills it instantly.
+        // The body of an ender dragon is a set of parts, and a click lands on one of those rather than on the
+        // dragon itself. The dragon is looked up around the part, which is what has to be killed.
+        if(!(entity instanceof net.minecraft.world.entity.LivingEntity) && entity.getClass().getName().endsWith(
+                "EnderDragonPart")) {
+            var dragons = player.level().getEntitiesOfClass(net.minecraft.world.entity.boss.enderdragon.EnderDragon.class,
+                    entity.getBoundingBox().inflate(3.0D));
+            if(!dragons.isEmpty()) entity = dragons.get(0);
+        }
+
         if(isSlayCore(stack)) {
             SlayHandler.slaySingle(player, entity, stack, new WandOptions(stack));
             return true;

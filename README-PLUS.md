@@ -28,6 +28,29 @@
 - `WandData.writeRoot/removeRoot/update`：同样只对手杖生效，任何漏网调用都写不进去。
 
 实测：手持 60 石头右键方块后 `components={…}` 里**没有** `custom_data`；手杖自己仍正常带 `wand_options`。
+## 必定掉落：补 Reliquary 风暴之眼；秒杀核心能打末影龙并加长手臂（2.16.81）
+
+**Reliquary 的风暴之眼**：它被注入到**带电爬行者**的战利品注入里（`EntityLootInjectSubProvider`，`reliquary_powered_creeper_` 0.03/0.05/0.15），
+注入发生在掷表阶段，遍历原表同样看不到。按“专用兼容”登记：
+
+```java
+if (isLoaded("reliquary") && victim instanceof Creeper creeper && creeper.isPowered())
+    add(found, "reliquary:eye_of_the_storm", 1);
+```
+
+**秒杀核心打不到末影龙**：末影龙的身体是一组 `EnderDragonPart`，玩家左键命中的是**零件**而不是龙本体，所以 `instanceof LivingEntity` 判定失败。
+现在命中零件时按包围盒附近找 `EnderDragon` 本体，再对它执行秒杀：
+
+```java
+if (!(entity instanceof LivingEntity) && entity.getClass().getName().endsWith("EnderDragonPart")) {
+    var dragons = player.level().getEntitiesOfClass(EnderDragon.class, entity.getBoundingBox().inflate(3.0D));
+    if (!dragons.isEmpty()) entity = dragons.get(0);
+}
+```
+
+**秒杀核心加长手臂**：新增 `SlayReachEvents`，手持带秒杀核心的法杖时给玩家 `Attributes.ENTITY_INTERACTION_RANGE` 加 **+8** 的临时 modifier，
+换下法杖立即移除（`constructionwand:slay_reach`），不会影响其他武器/交互。
+
 ## 必定掉落：补上事件型掉落（Mystical Agradditions，2.16.80）
 
 `mysticalagradditions` 的「凋灵灵魂碎片」不是战利品表给的，而是它的死亡事件里硬编码概率：
