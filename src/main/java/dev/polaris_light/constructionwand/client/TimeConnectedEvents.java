@@ -25,6 +25,7 @@ import dev.polaris_light.constructionwand.basics.ConfigServer;
 import dev.polaris_light.constructionwand.items.wand.ItemWand;
 import dev.polaris_light.constructionwand.network.ModMessages;
 import dev.polaris_light.constructionwand.plus.basics.TimeAcceleration;
+import dev.polaris_light.constructionwand.plus.basics.TimeTargets;
 import dev.polaris_light.constructionwand.plus.network.PacketTimeAccelerate;
 
 import java.util.List;
@@ -75,6 +76,10 @@ public final class TimeConnectedEvents
         if(minecraft.screen != null) return List.of();
         if(!(minecraft.hitResult instanceof BlockHitResult hit)) return List.of();
         if(!ItemWand.isTimeCore(minecraft.player.getMainHandItem())) return List.of();
+
+        // A machine is one body already: ctrl has nothing to add to it, and the outline would otherwise cover
+        // the casings of every machine that happens to be built from the same block.
+        if(!TimeTargets.of(minecraft.level, hit.getBlockPos()).tick().equals(hit.getBlockPos())) return List.of();
 
         List<BlockPos> blocks = TimeAcceleration.connected(minecraft.level, hit.getBlockPos(),
                 Math.max(1, ConfigServer.TIME_CORE_CONNECTED_LIMIT.get()));

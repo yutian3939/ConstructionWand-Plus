@@ -21,6 +21,7 @@ import org.joml.Vector3f;
 import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.plus.basics.TimeAcceleration;
 import dev.polaris_light.constructionwand.plus.basics.TimeCoreLevels;
+import dev.polaris_light.constructionwand.plus.basics.TimeTarget;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreTime;
 
 import java.util.ArrayList;
@@ -154,7 +155,9 @@ public final class TimeRenderEvents
 
         VertexConsumer lines = buffers.getBuffer(RenderType.lines());
         for(TimeAcceleration.Entry entry : visible) {
-            LevelRenderer.renderLineBox(poseStack, lines, new AABB(entry.pos()).inflate(0.002D), red, green, blue, 0.85F);
+            // A machine is outlined as the whole machine: the block that was clicked is only one of its
+            // blocks, and a box around that one block says nothing about what is being sped up.
+            LevelRenderer.renderLineBox(poseStack, lines, box(entry).inflate(0.002D), red, green, blue, 0.85F);
         }
         buffers.endBatch(RenderType.lines());
 
@@ -276,10 +279,23 @@ public final class TimeRenderEvents
         return normal.x() * x + normal.y() * y + normal.z() * z > 0.0D;
     }
 
+    /**
+     * The box that is outlined: the machine an entry stands for, or the block itself for everything that is
+     * not a machine.
+     */
+    private static AABB box(TimeAcceleration.Entry entry) {
+        TimeTarget target = entry.target();
+        return target.machine() ? AABB.encapsulatingFullBlocks(target.min(), target.max())
+                : new AABB(entry.pos());
+    }
+
     private static boolean inSight(Minecraft minecraft, Vec3 camera, RenderLevelStageEvent event,
                                    TimeAcceleration.Entry entry) {
-        if(!minecraft.level.isLoaded(entry.pos())) return false;
-        if(entry.pos().getCenter().distanceToSqr(camera) > VISIBLE_RANGE * VISIBLE_RANGE) return false;
-        return event.getFrustum().isVisible(new AABB(entry.pos()).inflate(0.5D));
+        if(!minecraft.level.isLoaded(entry.target().tick())) return false;
+        AABB box = box(entry);
+        // Measured to the box rather than to its middle, so a machine the player stands next to is marked
+        // even though its middle is further away than the reach of the readout.
+        if(box.distanceToSqr(camera) > VISIBLE_RANGE * VISIBLE_RANGE) return false;
+        return event.getFrustum().isVisible(box.inflate(0.5D));
     }
 }

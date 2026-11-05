@@ -13,6 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import dev.polaris_light.constructionwand.ConstructionWand;
 import dev.polaris_light.constructionwand.client.TimeClientState;
 import dev.polaris_light.constructionwand.plus.basics.TimeAcceleration;
+import dev.polaris_light.constructionwand.plus.basics.TimeTarget;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,13 +45,18 @@ public record PacketTimeAcceleration(List<TimeAcceleration.Entry> entries) imple
         for(int index = 0; index < size; index++) {
             ResourceLocation dimension = buffer.readResourceLocation();
             BlockPos pos = buffer.readBlockPos();
+            // The block that is ticked and the corner of the machine around it: the outline is drawn around
+            // the whole machine, so the client cannot work this out from the clicked block alone.
+            BlockPos tick = buffer.readBlockPos();
+            BlockPos min = buffer.readBlockPos();
+            BlockPos max = buffer.readBlockPos();
             int rate = buffer.readVarInt();
             int remaining = buffer.readVarInt();
             int total = buffer.readVarInt();
             float heading = buffer.readFloat();
             String blockId = buffer.readUtf();
             entries.add(new TimeAcceleration.Entry(ResourceKey.create(Registries.DIMENSION, dimension), pos, rate,
-                    remaining, total, heading, blockId));
+                    remaining, total, heading, blockId, new TimeTarget(tick, min, max)));
         }
         return entries;
     }
@@ -60,6 +66,9 @@ public record PacketTimeAcceleration(List<TimeAcceleration.Entry> entries) imple
         for(TimeAcceleration.Entry entry : entries) {
             buffer.writeResourceLocation(entry.dimension().location());
             buffer.writeBlockPos(entry.pos());
+            buffer.writeBlockPos(entry.target().tick());
+            buffer.writeBlockPos(entry.target().min());
+            buffer.writeBlockPos(entry.target().max());
             buffer.writeVarInt(entry.rate());
             buffer.writeVarInt(entry.remaining());
             buffer.writeVarInt(entry.total());

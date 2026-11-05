@@ -38,6 +38,17 @@ public class TimeAccelerationSave extends SavedData
     private static final String TAG_TOTAL = "total";
     private static final String TAG_HEADING = "heading";
     private static final String TAG_BLOCK = "block";
+    /**
+     * The block that is ticked, written only when it is not the block that was clicked. A save from before
+     * machines were understood does not have it, and those entries were plain blocks.
+     */
+    private static final String TAG_TARGET = "target";
+    /**
+     * The corners of the machine, written only for an entry that covers more than one block. Older saves
+     * have neither, and their entry is the one block it says.
+     */
+    private static final String TAG_BOX_MIN = "box_min";
+    private static final String TAG_BOX_MAX = "box_max";
 
     public TimeAccelerationSave() {
     }
@@ -53,9 +64,14 @@ public class TimeAccelerationSave extends SavedData
             CompoundTag entry = list.getCompound(index);
             ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION,
                     ResourceLocation.parse(entry.getString(TAG_DIMENSION)));
-            entries.add(new TimeAcceleration.StoredEntry(dimension, BlockPos.of(entry.getLong(TAG_POS)),
+            BlockPos pos = BlockPos.of(entry.getLong(TAG_POS));
+            BlockPos tick = entry.contains(TAG_TARGET) ? BlockPos.of(entry.getLong(TAG_TARGET)) : pos;
+            BlockPos min = entry.contains(TAG_BOX_MIN) ? BlockPos.of(entry.getLong(TAG_BOX_MIN)) : tick;
+            BlockPos max = entry.contains(TAG_BOX_MAX) ? BlockPos.of(entry.getLong(TAG_BOX_MAX)) : tick;
+            entries.add(new TimeAcceleration.StoredEntry(dimension, pos,
                     entry.getUUID(TAG_OWNER), entry.getInt(TAG_RATE), entry.getInt(TAG_REMAINING),
-                    entry.getInt(TAG_TOTAL), entry.getFloat(TAG_HEADING), entry.getString(TAG_BLOCK)));
+                    entry.getInt(TAG_TOTAL), entry.getFloat(TAG_HEADING), entry.getString(TAG_BLOCK),
+                    new TimeTarget(tick, min, max)));
         }
 
         TimeAcceleration.restore(entries);
@@ -75,6 +91,14 @@ public class TimeAccelerationSave extends SavedData
             stored.putInt(TAG_TOTAL, entry.total());
             stored.putFloat(TAG_HEADING, entry.heading());
             stored.putString(TAG_BLOCK, entry.blockId());
+            // Only written when it says something the position does not: an entry is a plain block unless
+            // the wand was pointed at a machine.
+            TimeTarget target = entry.target();
+            if(!target.tick().equals(entry.pos())) stored.putLong(TAG_TARGET, target.tick().asLong());
+            if(target.machine()) {
+                stored.putLong(TAG_BOX_MIN, target.min().asLong());
+                stored.putLong(TAG_BOX_MAX, target.max().asLong());
+            }
             list.add(stored);
         }
 

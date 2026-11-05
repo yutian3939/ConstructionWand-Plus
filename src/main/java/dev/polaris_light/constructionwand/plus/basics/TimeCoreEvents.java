@@ -93,7 +93,9 @@ public final class TimeCoreEvents
 
         int rate = selectedRate(wand);
         int duration = selectedDuration(wand);
-        if(!connected) {
+        // A machine is one body already, and its casing is not a vein to be walked: ctrl clicking a large
+        // machine accelerates that machine, not every machine that happens to share the casing block.
+        if(!connected || !TimeTargets.of(level, pos).tick().equals(pos)) {
             TimeAcceleration.Outcome outcome = TimeAcceleration.apply(player, level, pos, rate, duration);
             report(player, level, pos, outcome);
             if(outcome.result() == TimeAcceleration.Result.APPLIED) broadcast();
@@ -191,7 +193,9 @@ public final class TimeCoreEvents
 
     private static void report(ServerPlayer player, ServerLevel level, BlockPos pos, TimeAcceleration.Outcome outcome) {
         String key = ConstructionWand.MODID + ".time.";
-        Block block = level.getBlockState(pos).getBlock();
+        // The machine, not the casing that was clicked: a large machine is named after the block that runs
+        // it, which is what the player wanted to speed up.
+        Block block = level.getBlockState(outcome.target()).getBlock();
 
         switch(outcome.result()) {
             case APPLIED -> {

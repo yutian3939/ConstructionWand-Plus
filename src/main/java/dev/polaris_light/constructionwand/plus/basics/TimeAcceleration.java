@@ -39,6 +39,10 @@ import java.util.UUID;
  * block again simply re-applies them, so nothing has to be climbed by clicking. A duration of {@code -1}
  * never runs out.
  * <p>
+ * A machine built out of many blocks is kept under the block that was clicked and ticked through the block
+ * that runs it, which {@link TimeTargets} works out: the readout stays where the player aimed, the ticking
+ * happens where the mod that owns the machine expects it.
+ * <p>
  * The table lives on the server and is written into the save as {@link TimeAccelerationSave}, so leaving the
  * world and coming back keeps the effects; the time spent outside the world is not counted, the same way a
  * block in an unloaded chunk is held. A block that is gone or can no longer be ticked is forgotten.
@@ -111,8 +115,10 @@ public final class TimeAcceleration
 
     /**
      * @param remaining ticks left, or {@link #PERMANENT}
+     * @param target    the block that is ticked, which is the machine behind a clicked block and the
+     *                  clicked block itself for everything else
      */
-    public record Outcome(Result result, int rate, int remaining)
+    public record Outcome(Result result, int rate, int remaining, BlockPos target)
     {
         public boolean permanent() {
             return remaining == PERMANENT;
@@ -125,25 +131,33 @@ public final class TimeAcceleration
 
     /**
      * One accelerated block, as it travels to the clients that draw it.
+     *
+     * @param pos    the block the player clicked, which is where the numbers are written
+     * @param target the block that is ticked and the box of its machine, which is where the outline goes
      */
     public record Entry(ResourceKey<Level> dimension, BlockPos pos, int rate, int remaining, int total,
-                        float heading, String blockId)
+                        float heading, String blockId, TimeTarget target)
     {
     }
 
     /**
      * One accelerated block, with the player who paid for it, as it is written into the save. The owner is
      * what "cancel everything I accelerated" works from, so it has to survive a reload as well.
+     *
+     * @param pos    the block the player clicked, which is where the readout is drawn
+     * @param target the block that is ticked and the box of its machine, which differs from {@code pos} on
+     *               a machine made of many blocks
      */
     public record StoredEntry(ResourceKey<Level> dimension, BlockPos pos, UUID owner, int rate, int remaining,
-                              int total, float heading, String blockId)
+                              int total, float heading, String blockId, TimeTarget target)
     {
     }
 
-    private record Stored(UUID owner, int rate, int remaining, int total, float heading, String blockId)
+    private record Stored(UUID owner, int rate, int remaining, int total, float heading, String blockId,
+                          TimeTarget target)
     {
         private Entry toEntry(ResourceKey<Level> dimension, BlockPos pos) {
-            return new Entry(dimension, pos, rate, remaining, total, heading, blockId);
+            return new Entry(dimension, pos, rate, remaining, total, heading, blockId, target);
         }
     }
 
@@ -173,29 +187,39 @@ public final class TimeAcceleration
      * Applies the settings of the wand to the block, replacing whatever it was accelerated with before.
      */
     public static Outcome apply(ServerPlayer player, ServerLevel level, BlockPos pos, int rate, int durationTicks) {
-        if(!ConfigServer.TIME_CORE_ENABLED.get()) return new Outcome(Result.DISABLED, 0, 0);
-        if(rate <= 1) return new Outcome(Result.INVALID, 0, 0);
+        if(!ConfigServer.TIME_CORE_ENABLED.get()) return new Outcome(Result.DISABLED, 0, 0, pos);
+        if(rate <= 1) return new Outcome(Result.INVALID, 0, 0, pos);
 
-        BlockState state = level.getBlockState(pos);
-        if(!isAccelerable(level, pos, state)) return new Outcome(Result.INVALID, 0, 0);
+        // The clicked block may only be a part of a machine: the block that is ticked is the machine
+        // itself. A block taken out of the deny list in either place keeps the whole machine out of it.
+        BlockState clicked = level.getBlockState(pos);
+        TimeTarget target = TimeTargets.of(level, pos);
+        BlockPos tick = target.tick();
+        BlockState state = tick.equals(pos) ? clicked : level.getBlockState(tick);
+        if(isDenied(clicked) || isDenied(state)) return new Outcome(Result.INVALID, 0, 0, tick);
+        if(!isAccelerable(level, tick, state)) return new Outcome(Result.INVALID, 0, 0, tick);
 
         Map<BlockPos, Stored> entries = ACTIVE.computeIfAbsent(level.dimension(), key -> new LinkedHashMap<>());
+        // One machine is one entry, however many of its blocks are clicked: whichever block was clicked last
+        // is the one the numbers are written on, so the readout is wherever the player is looking.
+        entries.entrySet().removeIf(existing -> existing.getValue().target().tick().equals(tick)
+                && !existing.getKey().equals(pos));
         // Nothing is dropped for the new one: a player who is at the limit is told so, instead of silently
         // losing a block they were watching. The limit is only a guard against runaway numbers.
         if(!entries.containsKey(pos) && owned(entries, player.getUUID()) >= maxActive())
-            return new Outcome(Result.LIMITED, 0, 0);
+            return new Outcome(Result.LIMITED, 0, 0, tick);
         // The heading is the direction the player faces right now, rounded to one of the four sides: the
         // readout on the top of the block is written to be read from there and keeps that side for as long
         // as the effect lasts.
         // The id of the block is stored too: the screen can then name a block in another dimension, or in a
-        // chunk this client has never loaded.
+        // chunk this client has never loaded. It names the machine itself, not the casing that was clicked.
         entries.put(pos, new Stored(player.getUUID(), rate, durationTicks, durationTicks,
-                cardinal(player.getYRot()), BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString()));
+                cardinal(player.getYRot()), blockId(state), target));
         markDirty();
 
         // Tick it right away, so the very first click is visible before the next tick comes around.
-        accelerate(level, pos, rate, state);
-        return new Outcome(Result.APPLIED, rate, durationTicks);
+        accelerate(level, tick, rate, state);
+        return new Outcome(Result.APPLIED, rate, durationTicks, tick);
     }
 
     /**
@@ -203,7 +227,16 @@ public final class TimeAcceleration
      */
     public static Result remove(ServerLevel level, BlockPos pos) {
         Map<BlockPos, Stored> entries = ACTIVE.get(level.dimension());
-        if(entries == null || entries.remove(pos) == null) return Result.NOT_ACCELERATED;
+        if(entries == null) return Result.NOT_ACCELERATED;
+
+        boolean removed = entries.remove(pos) != null;
+        // A machine was perhaps accelerated from another of its blocks: an entry that ticks the same block
+        // is let go as well, so a machine can be released from wherever it is clicked.
+        BlockPos tick = TimeTargets.of(level, pos).tick();
+        if(!tick.equals(pos))
+            removed |= entries.entrySet().removeIf(entry -> entry.getValue().target().tick().equals(tick));
+        if(!removed) return Result.NOT_ACCELERATED;
+
         if(entries.isEmpty()) ACTIVE.remove(level.dimension());
         markDirty();
         return Result.REMOVED;
@@ -264,19 +297,20 @@ public final class TimeAcceleration
             Iterator<Map.Entry<BlockPos, Stored>> blocks = levelEntry.getValue().entrySet().iterator();
             while(blocks.hasNext()) {
                 Map.Entry<BlockPos, Stored> blockEntry = blocks.next();
-                BlockPos pos = blockEntry.getKey();
                 Stored entry = blockEntry.getValue();
+                // The machine behind a clicked block, or the block itself for everything else. The block
+                // that was clicked is only the one the numbers hang on.
+                BlockPos tick = entry.target().tick();
 
                 // Held while the chunk is not loaded, so time does not pass for a block nobody can see.
-                if(!level.isLoaded(pos)) continue;
+                if(!level.isLoaded(tick)) continue;
 
                 // The entry is dropped when the block it belongs to is no longer there, not when the
                 // block merely declines to be ticked this once: a machine that is paused, or a block whose
                 // own logic skips a tick, used to take a permanent acceleration with it.
                 boolean replaced = !entry.blockId().isEmpty()
-                        && !BuiltInRegistries.BLOCK.getKey(level.getBlockState(pos).getBlock()).toString()
-                        .equals(entry.blockId());
-                boolean refused = !accelerate(level, pos, entry.rate(), null);
+                        && !blockId(level.getBlockState(tick)).equals(entry.blockId());
+                boolean refused = !accelerate(level, tick, entry.rate(), null);
                 boolean gone = replaced || (refused && entry.remaining() != PERMANENT);
                 // A permanent effect has no timer to run out.
                 boolean expired = !gone && entry.remaining() != PERMANENT && entry.remaining() <= 1;
@@ -287,7 +321,7 @@ public final class TimeAcceleration
                 }
                 if(entry.remaining() != PERMANENT) {
                     blockEntry.setValue(new Stored(entry.owner(), entry.rate(), entry.remaining() - 1,
-                            entry.total(), entry.heading(), entry.blockId()));
+                            entry.total(), entry.heading(), entry.blockId(), entry.target()));
                 }
             }
 
@@ -338,7 +372,7 @@ public final class TimeAcceleration
             for(Map.Entry<BlockPos, Stored> block : level.getValue().entrySet()) {
                 Stored stored = block.getValue();
                 entries.add(new StoredEntry(level.getKey(), block.getKey(), stored.owner(), stored.rate(),
-                        stored.remaining(), stored.total(), stored.heading(), stored.blockId()));
+                        stored.remaining(), stored.total(), stored.heading(), stored.blockId(), stored.target()));
             }
         }
         return entries;
@@ -353,7 +387,7 @@ public final class TimeAcceleration
             if(entry.rate() <= 1) continue;
             ACTIVE.computeIfAbsent(entry.dimension(), key -> new LinkedHashMap<>())
                     .put(entry.pos(), new Stored(entry.owner(), entry.rate(), entry.remaining(), entry.total(),
-                            entry.heading(), entry.blockId()));
+                            entry.heading(), entry.blockId(), entry.target()));
         }
         markDirty();
     }
@@ -425,6 +459,13 @@ public final class TimeAcceleration
     }
 
     /**
+     * @return the id of the block, as the save and the screen use it
+     */
+    private static String blockId(BlockState state) {
+        return BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+    }
+
+    /**
      * A block that must never be accelerated, from the configuration. A plain mod id denies everything
      * that mod adds, which is how the tile entity list of the stock config works as well.
      */
@@ -432,7 +473,7 @@ public final class TimeAcceleration
         List<?> denied = ConfigServer.TIME_CORE_DENY.get();
         if(denied.isEmpty()) return false;
 
-        String id = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        String id = blockId(state);
         for(Object entry : denied) {
             if(!(entry instanceof String text) || text.isEmpty()) continue;
             if(text.equals(id)) return true;

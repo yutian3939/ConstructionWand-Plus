@@ -59,7 +59,7 @@ public final class TimeClientState
                     continue;
                 }
                 block.setValue(new TimeAcceleration.Entry(entry.dimension(), entry.pos(), entry.rate(),
-                        entry.remaining() - 1, entry.total(), entry.heading(), entry.blockId()));
+                        entry.remaining() - 1, entry.total(), entry.heading(), entry.blockId(), entry.target()));
             }
             if(blocks.isEmpty()) levels.remove();
         }
