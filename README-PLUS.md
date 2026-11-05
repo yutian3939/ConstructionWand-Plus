@@ -356,6 +356,20 @@ cd ConstructionWand-KOTS-1.21.1
 
 > 按版本倒序，最新的在最前。每条是那一版「为什么这样做」与实测记录；某个版本号有多条时，后一条是它的后续修正。
 
+### 必定掉落：战利品修改器加上过滤、实体 tag 与按服务器缓存（2.16.85）
+
+「必定掉落」读全局战利品修改器时，只认**说明了归属**的修改器：
+
+- 按 `type` 排除 `remove` / `replace` / `convert` / `clear` / `smelt`：这些是「拿走或改造战利品」的修改器，它们的物品表意思正好相反；
+- 条件里出现 `match_tool` / `damage_source_properties` / `enchantment_active`，或 `entity` 指向的不是 `this`
+  （说的是凶器而不是死者），整条丢弃 —— 这里动手的是法杖，不是那把刀；
+- 实体可以写成 id、id 数组或 `#tag`（走 `TagKey`），所以按「僵尸类」「亡灵类」这类 tag 登记的战利品注入也能读到；
+- `any_of` / `all_of` / `inverted`，以及 `terms` / `children` / `modifier` 里的条件递归读，深度上限 4。
+  概率条件仍然**不读**：把战利品表能给的都列出来，本来就是这一项的意义。
+
+缓存改成按**服务器实例**走（换服务器 / 换存档就重建），不再依赖 `ServerStarted` 清空；读完打一行 DEBUG 计数，
+方便区分「数据包里没有」和「被过滤掉了」。
+
 ### 已修：手杖数据被写到手持物品上（不堆叠）
 
 `WandOptions` 的构造函数会把选项**立刻写回栈**，而 `ItemWand.isTimeCore/isSlayCore` 这一类「问一句」的判定
@@ -380,7 +394,7 @@ cd ConstructionWand-KOTS-1.21.1
   `entity_properties.predicate.type` 与实体类型比对；两者都没有的修改器视为对所有实体生效。
   这样“给爬行者的注入”不会被套到牛身上。
 
-解析结果按服务器缓存（`ServerStarted` 时清空），击杀时零 IO。已删除 Reliquary 的专用兼容 —— 它的
+解析结果按服务器缓存（见 2.16.85），击杀时零 IO。已删除 Reliquary 的专用兼容 —— 它的
 `entities/creeper.json` 正是这种注入（`loot_table: reliquary:inject/entities/creeper` + `neoforge:loot_table_id`），
 现在由通用路径覆盖，从而拿到风暴之眼。
 
