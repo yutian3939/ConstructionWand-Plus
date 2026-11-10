@@ -31,8 +31,6 @@ import dev.polaris_light.constructionwand.plus.items.ItemCoreAE;
 import dev.polaris_light.constructionwand.plus.items.ItemCoreStorage;
 import dev.polaris_light.constructionwand.plus.material.ContainerBinding;
 
-import java.util.Set;
-
 public class KeybindHandler {
     public static final KeyMapping KEY_OPT = new KeyMapping(getKey("wand_option"), GLFW.GLFW_KEY_LEFT_CONTROL, getKey("category"));
     public static final KeyMapping KEY_UNDO = new KeyMapping(getKey("undo"), GLFW.GLFW_KEY_Z, getKey("category"));
@@ -52,14 +50,19 @@ public class KeybindHandler {
     private boolean undoKeyWasDown;
 
     /**
-     * The undo key performs the undo while the undo combination (the wand config key, plus sneak when
-     * the configuration asks for it) is held. It is read on the client tick rather than from the key
-     * event so that it follows the same combination the right click undo uses.
+     * The undo key undoes the last operation from anywhere while the config key is held on its own.
+     * <p>
+     * Shift must not be held: ctrl+shift is the combination that opens the wand screen, so a player
+     * reaching for the screen must not lose the last operation on the way. It is read on the client
+     * tick so a held key only fires once.
      */
     @SubscribeEvent
     public void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
-        Player player = Minecraft.getInstance().player;
-        if(player == null || WandUtil.holdingWand(player) == null || !modeKeyCombDown()) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Player player = minecraft.player;
+        // A screen swallows the key: undo must not fire behind an open menu.
+        if(player == null || minecraft.screen != null
+                || WandUtil.holdingWand(player) == null || !undoKeyCombDown()) {
             undoKeyWasDown = false;
             return;
         }
@@ -114,9 +117,8 @@ public class KeybindHandler {
      * core's area kill while the player only wanted the screen. Cancelling this input event ends the use
      * before a packet exists at all.
      * <p>
-     * The right click undo rides on the same combination, so a click aimed at what the last operation
-     * touched is left alone: it has to reach the server. The screen still opens for it through the
-     * interaction handlers below, exactly as it always did.
+     * Undo is not part of the click any more: it is the undo key (ctrl+Z) and works no matter what is
+     * aimed at, so a click on a block of the last operation opens the screen like any other click.
      */
     @SubscribeEvent
     public void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
@@ -130,33 +132,10 @@ public class KeybindHandler {
         if(!(wand.getItem() instanceof ItemWand)) return;
         if(TimeConnectedEvents.takesOverUse(wand)) return;
         if(wouldBind(player, wand)) return;
-        if(isUndoClick(minecraft)) return;
 
         minecraft.setScreen(new ScreenWand(wand));
         event.setCanceled(true);
         event.setSwingHand(false);
-    }
-
-    /**
-     * @return whether the click is aimed at a block the last operation touched, which makes it the right
-     * click undo. The edited blocks are the ones the server sent for the preview, and the range check
-     * mirrors the one the server uses to accept an undo.
-     */
-    private static boolean isUndoClick(Minecraft minecraft) {
-        if(!(minecraft.hitResult instanceof BlockHitResult hit)) return false;
-
-        RenderBlockPreview preview = ClientHandler.renderBlockPreview;
-        if(preview == null) return false;
-
-        Set<BlockPos> blocks = preview.undoBlocks;
-        if(blocks == null || blocks.isEmpty()) return false;
-
-        BlockPos pos = hit.getBlockPos();
-        if(blocks.contains(pos)) return true;
-        for(BlockPos candidate : blocks) {
-            if(pos.closerThan(candidate, 3)) return true;
-        }
-        return false;
     }
 
     // (Sneak)+OPT+Scroll to change direction lock
@@ -276,5 +255,14 @@ public class KeybindHandler {
     public static boolean guiKeyCombDown() {
         // The screen always needs shift as well: ctrl alone belongs to the time core's connected mode.
         return isOptKeyDown() && isLeftShiftKeyDown();
+    }
+
+    /**
+     * The undo combination: the config key on its own. Shift is deliberately excluded, because
+     * ctrl+shift is the combination that opens the wand screen, and holding a modifier meant for the
+     * screen must not undo the last operation.
+     */
+    public static boolean undoKeyCombDown() {
+        return isOptKeyDown() && !isLeftShiftKeyDown();
     }
 }

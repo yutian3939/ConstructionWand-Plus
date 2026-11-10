@@ -41,6 +41,7 @@ public class ConstructionWandJeiPlugin implements IModPlugin
     @Override
     public void registerRecipes(@NotNull IRecipeRegistration registration) {
         Component optkeyComponent = KeybindHandler.KEY_OPT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BLUE);
+        Component undoKeyComponent = KeybindHandler.KEY_UNDO.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BLUE);
         Component wandModeComponent = keyComboComponent(ConfigClient.SHIFTOPT_MODE.get(), optkeyComponent);
         Component wandGuiComponent = keyComboComponent(true, optkeyComponent);
 
@@ -54,7 +55,8 @@ public class ConstructionWandJeiPlugin implements IModPlugin
             registration.addIngredientInfo(new ItemStack(wand), VanillaTypes.ITEM_STACK,
                     Component.translatable(baseKey + "wand",
                             Component.translatable(baseKeyItem + BuiltInRegistries.ITEM.getKey(wand).getPath()),
-                            wandProperties.getLimit(), durabilityComponent, optkeyComponent, wandModeComponent, wandGuiComponent)
+                            wandProperties.getLimit(), durabilityComponent, optkeyComponent, wandModeComponent, wandGuiComponent,
+                            undoKeyComponent)
             );
         }
 

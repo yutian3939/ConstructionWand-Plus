@@ -42,10 +42,10 @@ public class UndoHistory
         Level world = player.level();
         if(world.isClientSide) return;
 
-        // Set state of CTRL key
+        // Set state of CTRL and SHIFT; the server has no other way to know them
         PlayerEntry playerEntry = getEntryFromPlayer(player);
-        playerEntry.undoActive = ctrlDown;
-        playerEntry.shiftActive = shiftDown;
+        playerEntry.ctrlDown = ctrlDown;
+        playerEntry.shiftDown = shiftDown;
 
         LinkedList<HistoryEntry> historyEntries = playerEntry.entries;
         Set<BlockPos> positions;
@@ -63,41 +63,23 @@ public class UndoHistory
         ModMessages.sendToPlayer(packet, (ServerPlayer) player);
     }
 
-    public boolean isShiftActive(Player player) {
-        return getEntryFromPlayer(player).shiftActive;
+    public boolean isShiftDown(Player player) {
+        return getEntryFromPlayer(player).shiftDown;
     }
 
-    public boolean isUndoActive(Player player) {
-        return getEntryFromPlayer(player).undoActive;
-    }
-
-    public boolean undo(Player player, Level world, BlockPos pos) {
-        // If CTRL key is not pressed, return
-        PlayerEntry playerEntry = getEntryFromPlayer(player);
-        if(!playerEntry.undoActive) return false;
-
-        // Get the most recent entry for undo
-        LinkedList<HistoryEntry> historyEntries = playerEntry.entries;
-        if(historyEntries.isEmpty()) return false;
-        HistoryEntry entry = historyEntries.getLast();
-
-        // Player has to be in the same world and near the blocks
-        if(!entry.world.equals(world) || !entry.withinRange(pos)) return false;
-
-        if(entry.undo(player)) {
-            historyEntries.remove(entry);
-            updateClient(player, true, playerEntry.shiftActive);
-            return true;
-        }
-        return false;
+    public boolean isCtrlDown(Player player) {
+        return getEntryFromPlayer(player).ctrlDown;
     }
 
     /**
-     * Undoes the most recent operation without aiming at it, used by the undo key binding.
+     * Undoes the most recent operation of the player, from anywhere: the undo key does not need a block
+     * to be aimed at, only the config key to be held.
      */
     public boolean undo(Player player, Level world) {
         PlayerEntry playerEntry = getEntryFromPlayer(player);
-        if(!playerEntry.undoActive) return false;
+        // The undo combination is the config key on its own; shift opens the wand screen and must not
+        // undo, which is also enforced here so a stale key state cannot undo behind the screen.
+        if(!playerEntry.ctrlDown || playerEntry.shiftDown) return false;
 
         LinkedList<HistoryEntry> historyEntries = playerEntry.entries;
         if(historyEntries.isEmpty()) return false;
@@ -107,7 +89,7 @@ public class UndoHistory
 
         if(entry.undo(player)) {
             historyEntries.remove(entry);
-            updateClient(player, true, playerEntry.shiftActive);
+            updateClient(player, true, playerEntry.shiftDown);
             return true;
         }
         return false;
@@ -116,13 +98,13 @@ public class UndoHistory
     private static class PlayerEntry
     {
         public final LinkedList<HistoryEntry> entries;
-        public boolean undoActive;
-        public boolean shiftActive;
+        public boolean ctrlDown;
+        public boolean shiftDown;
 
         public PlayerEntry() {
             entries = new LinkedList<>();
-            undoActive = false;
-            shiftActive = false;
+            ctrlDown = false;
+            shiftDown = false;
         }
     }
 
@@ -138,17 +120,6 @@ public class UndoHistory
 
         public Set<BlockPos> getBlockPositions() {
             return placeSnapshots.stream().map(ISnapshot::getPos).collect(Collectors.toSet());
-        }
-
-        public boolean withinRange(BlockPos pos) {
-            Set<BlockPos> positions = getBlockPositions();
-
-            if(positions.contains(pos)) return true;
-
-            for(BlockPos p : positions) {
-                if(pos.closerThan(p, 3)) return true;
-            }
-            return false;
         }
 
         public boolean undo(Player player) {

@@ -67,13 +67,11 @@ public abstract class ItemWand extends Item implements ICustomItemModel
 
         ItemStack stack = player.getItemInHand(hand);
 
-        // The wand screen and the area kill are both opened with a sneaking right click, so the screen
-        // wins while the config key is held: the key state is what the client sends, and it is the same
-        // state the undo rides on. Without this a player opening the screen would wipe out everything
-        // around them.
-        if(ConstructionWand.undoHistory.isUndoActive(player)) {
-            return ConstructionWand.undoHistory.undo(player, world, context.getClickedPos()) ? InteractionResult.SUCCESS : InteractionResult.FAIL;
-        }
+        // The config key marks a click that is not a use: the wand screen opens on it client side, the time
+        // core's connected mode handles it through its own packet, and the area kill must never run while
+        // it is held. Undo does not ride on the click any more; it is the undo key (ctrl+Z).
+        if(configKeyDown(player)) return InteractionResult.FAIL;
+
         // The slay core kills everything around the player instead of touching the block.
         if(player.isCrouching() && isSlayCore(stack)) {
             SlayHandler.slayRadius(player, stack, new WandOptions(stack), slayRadius(stack));
@@ -92,7 +90,7 @@ public abstract class ItemWand extends Item implements ICustomItemModel
 
         // The config key check has to run before the area kill for the same reason as in useOn: while
         // the wand screen is being opened, a sneaking right click is not a kill.
-        if(ConstructionWand.undoHistory.isUndoActive(player)) return InteractionResultHolder.fail(stack);
+        if(configKeyDown(player)) return InteractionResultHolder.fail(stack);
 
         // Sneaking right click in mid air: the slay core's area kill.
         if(player.isCrouching() && isSlayCore(stack)) {
@@ -123,6 +121,15 @@ public abstract class ItemWand extends Item implements ICustomItemModel
 
         WandJob job = getWandJob(player, world, target, stack);
         return job.doIt() ? InteractionResultHolder.success(stack) : InteractionResultHolder.fail(stack);
+    }
+
+    /**
+     * @return whether the wand config key is held. Its state reaches the server through the key packet,
+     * so a click can be refused there before it turns into a wand action. This is not the undo any more:
+     * the undo is the undo key, and it is handled by its own packet.
+     */
+    private static boolean configKeyDown(Player player) {
+        return ConstructionWand.undoHistory.isCtrlDown(player);
     }
 
     @Override

@@ -45,7 +45,7 @@ public class RenderBlockPreview {
         ItemStack wand = WandUtil.holdingWand(player);
         if(wand == null) return;
 
-        if (KeybindHandler.isOptKeyDown()) {
+        if (KeybindHandler.undoKeyCombDown()) {
             blocks = undoBlocks;
             colorG = 1;
         }
@@ -99,8 +99,8 @@ public class RenderBlockPreview {
         Vec3 cameraPos = event.getCamera().getPosition();
 
         // Undo: the highlight event only fires while a block is aimed at, this pass shows the last
-        // operation no matter what is looked at.
-        if(KeybindHandler.isOptKeyDown()) {
+        // operation no matter what is looked at while the undo key combination is held.
+        if(KeybindHandler.undoKeyCombDown()) {
             Set<BlockPos> blocks = undoBlocks;
             if(blocks == null || blocks.isEmpty()) return;
             drawBoxes(ms, buffer, cameraPos, blocks, 0, 1, 0);

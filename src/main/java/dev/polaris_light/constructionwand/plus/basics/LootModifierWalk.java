@@ -40,9 +40,11 @@ import javax.annotation.Nullable;
  * <h2>What is not offered</h2>
  * A modifier only counts when it says <em>where</em> it belongs: a mob it names, a mob tag it names, or the loot
  * table it is written for. Everything else is left out, because the same folder also holds modifiers for blocks,
- * plants, chests and vaults, and their item has no business being handed out for a kill. A modifier that is about
- * the weapon instead of the victim (a knife, a damage type, the killer's held item) is left out as well: the wand
- * is the weapon here.
+ * plants, chests and vaults, and their item has no business being handed out for a kill.
+ * <p>
+ * Conditions about the weapon are ignored rather than required or refused. A modifier such as Farmer's Delight's
+ * "the killer holds a knife, so the cow also drops leather" names no tool this wand could ever satisfy; the point
+ * of the option is everything the victim can produce, not only what the wand itself would produce.
  * <p>
  * The chance conditions are deliberately not read. Handing out everything a table can produce is the point of the
  * option, so a one in fifty entry is offered like a guaranteed one.
@@ -54,10 +56,6 @@ public final class LootModifierWalk
 
     /** Effect types that take loot away or turn it into something else; their item list means the opposite. */
     private static final List<String> TAKING_TYPES = List.of("remove", "replace", "convert", "clear", "smelt");
-
-    /** Conditions about the weapon or the damage dealt, which a wand kill never satisfies. */
-    private static final List<String> WEAPON_CONDITIONS = List.of("match_tool", "damage_source_properties",
-            "enchantment_active");
 
     /** Parsed modifiers of the running server. They never change while it runs, so they are read once. */
     private static final Map<ResourceLocation, Modifier> CACHE = new HashMap<>();
@@ -126,7 +124,7 @@ public final class LootModifierWalk
     }
 
     /**
-     * @return the modifier, or {@code null} when it only takes loot away or is about the weapon
+     * @return the modifier, or {@code null} when it takes loot away or turns it into something else
      */
     @Nullable
     private static Modifier parse(JsonObject json) {
@@ -152,7 +150,6 @@ public final class LootModifierWalk
         readIds(json.get("loot_table_to_inject_into"), draft.lootTables);
         readConditions(json.get("conditions"), draft, 0);
 
-        if(draft.denied) return null;
         return new Modifier(List.copyOf(draft.items), List.copyOf(draft.tables), List.copyOf(draft.entityTypes),
                 List.copyOf(draft.entityTags), List.copyOf(draft.lootTables));
     }
@@ -162,7 +159,7 @@ public final class LootModifierWalk
      * {@code inverted}.
      */
     private static void readConditions(@Nullable JsonElement element, Draft draft, int depth) {
-        if(element == null || depth > 4 || draft.denied) return;
+        if(element == null || depth > 4) return;
 
         if(element.isJsonArray()) {
             for(JsonElement child : element.getAsJsonArray()) {
@@ -174,25 +171,18 @@ public final class LootModifierWalk
 
         JsonObject condition = element.getAsJsonObject();
 
-        String name = nameOf(condition.get("condition"));
-        if(name != null) {
-            for(String weapon : WEAPON_CONDITIONS) {
-                if(name.endsWith(weapon)) draft.denied = true;
-            }
-        }
-
-        // A predicate about the killer describes the weapon, not the loot of the victim. Only a predicate about
-        // the victim itself says something about which mobs this modifier is for.
+        // A condition about the killer or the weapon (entity: attacker, killer, direct_killer, ...) is not a
+        // reason to drop the modifier: Farmer's Delight writes its knife drops exactly that way ("the killer
+        // holds a knife"), and this option hands out everything a victim can produce whatever tool is used on
+        // it. Only a condition about the victim itself says where the modifier belongs.
         JsonElement owner = condition.get("entity");
         boolean aboutVictim = owner == null || (owner.isJsonPrimitive() && "this".equals(owner.getAsString()));
-        if(!aboutVictim) draft.denied = true;
-
-        JsonElement predicate = condition.get("predicate");
-        if(aboutVictim && predicate != null && predicate.isJsonObject()) {
-            readEntityType(predicate.getAsJsonObject().get("type"), draft);
-        }
 
         if(aboutVictim) {
+            JsonElement predicate = condition.get("predicate");
+            if(predicate != null && predicate.isJsonObject()) {
+                readEntityType(predicate.getAsJsonObject().get("type"), draft);
+            }
             readIds(condition.get("loot_table"), draft.lootTables);
             readIds(condition.get("loot_table_id"), draft.lootTables);
             readIds(condition.get("loot_table_ids"), draft.lootTables);
@@ -273,7 +263,6 @@ public final class LootModifierWalk
         final List<ResourceLocation> entityTypes = new ArrayList<>();
         final List<ResourceLocation> entityTags = new ArrayList<>();
         final List<ResourceLocation> lootTables = new ArrayList<>();
-        boolean denied;
     }
 
     /**

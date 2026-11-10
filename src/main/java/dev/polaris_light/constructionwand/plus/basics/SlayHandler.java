@@ -3,6 +3,8 @@ package dev.polaris_light.constructionwand.plus.basics;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.storage.loot.LootTable;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import dev.polaris_light.constructionwand.plus.wand.undo.DigSnapshot;
 import dev.polaris_light.constructionwand.plus.basics.SuperFortuneLevels;
 import net.minecraft.core.registries.Registries;
@@ -14,8 +16,10 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -24,6 +28,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.common.DeferredSpawnEggItem;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
@@ -251,8 +256,10 @@ public final class SlayHandler
      * Hands out one of every item the victim could possibly drop, on top of the normal roll, when the
      * guaranteed loot option is set. The list comes from reading the loot table ({@link LootTableWalk}),
      * which names a rare entry just as well as a common one; an entry type the walk does not know is
-     * skipped without a word, the way a loot viewer does. Every item is delivered through the usual route,
-     * so the super fortune factor and the destination still apply.
+     * skipped without a word, the way a loot viewer does. Global loot modifiers add what mods inject into
+     * that table ({@link LootModifierWalk}), and code-driven drops are added by hand
+     * ({@link SpecialDeathDrops}). Every item is delivered through the usual route, so the super fortune
+     * factor and the destination still apply.
      */
     private static void dropEveryPossibleItem(LivingEntity victim, ServerLevel level, DamageSource source) {
         SlayContext context = SLAYING.get();
@@ -267,16 +274,11 @@ public final class SlayHandler
 
         // Some mods hand their drops out from a death handler instead of a loot table; those are added here, or
         // the wand would silently skip them.
-        for(ItemStack extra : SpecialDeathDrops.forVictim(victim)) {
-            boolean known = false;
-            for(ItemStack stack : found) {
-                if(ItemStack.isSameItemSameComponents(stack, extra)) {
-                    known = true;
-                    break;
-                }
-            }
-            if(!known) found.add(extra);
-        }
+        found.addAll(SpecialDeathDrops.forVictim(victim));
+
+        // One of each item, whatever number of tables and modifiers named it: a modifier that adds the leather a
+        // cow already drops must not hand out a second stack.
+        found = oneOfEach(found);
         if(found.isEmpty()) return;
 
         DigSnapshot.multiplyDrops(found, SuperFortuneLevels.multiplier(context.wand));
@@ -289,6 +291,19 @@ public final class SlayHandler
         } finally {
             context.handling = false;
         }
+    }
+
+    /**
+     * @return the first stack of every item, in the order the sources named them
+     */
+    private static List<ItemStack> oneOfEach(List<ItemStack> stacks) {
+        List<ItemStack> unique = new ArrayList<>(stacks.size());
+        Set<Item> seen = new HashSet<>();
+        for(ItemStack stack : stacks) {
+            if(stack.isEmpty() || !seen.add(stack.getItem())) continue;
+            unique.add(stack);
+        }
+        return unique;
     }
     private static void rollLoot(LivingEntity victim, ServerLevel level, DamageSource source) {
         if(DROP_ALL_DEATH_LOOT == null) return;
@@ -304,11 +319,31 @@ public final class SlayHandler
      * has one), routed to the same destination as the rest of the drops.
      */
     private static void dropSpawnEgg(SlayContext context) {
-        SpawnEggItem egg = SpawnEggItem.byId(context.target.getType());
-        if(egg == null) return;
-        ItemStack stack = new ItemStack(egg);
+        ItemStack stack = spawnEggOf(context.target);
+        if(stack.isEmpty()) return;
         DropDelivery.deliver(context.level, context.player, context.target.blockPosition(), stack,
                 context.destination, context.materialCore, context.wand, null);
+    }
+
+    /**
+     * The spawn egg of a victim.
+     * <p>
+     * {@link SpawnEggItem#byId} only knows eggs whose item was handed a built entity type, which is how
+     * vanilla and some mods register them. Mods that go through NeoForge's
+     * {@link DeferredSpawnEggItem} pass a supplier instead and are missing from that map, so those are
+     * looked up separately.
+     * <p>
+     * The victim itself is asked first, through the same hook the pick block key uses: a mod that keeps
+     * one egg per variant (a bee per type, say) builds the right one there, data included, which no map
+     * of entity type to item could express.
+     */
+    private static ItemStack spawnEggOf(LivingEntity victim) {
+        ItemStack picked = victim.getPickedResult(new EntityHitResult(victim));
+        if(picked != null && !picked.isEmpty()) return picked;
+
+        SpawnEggItem egg = SpawnEggItem.byId(victim.getType());
+        if(egg == null) egg = DeferredSpawnEggItem.deferredOnlyById(victim.getType());
+        return egg == null ? ItemStack.EMPTY : new ItemStack(egg);
     }
 
     /**

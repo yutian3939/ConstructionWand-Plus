@@ -136,9 +136,9 @@
 - **SHIFT+左键点击核心**即可卸下核心（返回物品）；
 - 右栏：升级列表——**左键点击切换启用/禁用**（禁用后仍安装但效果失效，图标变暗），**SHIFT+左键卸下**；
 - 右栏：绑定容器列表——`↑`/`↓` 调整优先级，`✕` 解绑；
-- **新增撤销按键**（默认 `Z`，可在按键设置中改绑）：按住功能键（默认左 Ctrl，按配置可再叠加潜行）时按下即可
-  撤销，不必再瞄准方块；
-- 功能键 + 右键点击方块也会打开配置界面（除非该点击会被仓储核心用于绑定容器）。
+- **新增撤销按键**（默认 `Z`，可在按键设置中改绑）：**任意位置**按住功能键（默认左 Ctrl，**不要按 Shift**）时按下即可
+  撤销，不必再瞄准方块；右键撤销已移除，按住功能键对着方块右键不会撤销；
+- Shift + 功能键 + 右键点击方块打开配置界面（除非该点击会被仓储核心用于绑定容器或时间核心的连通模式接管）。
 
 ### 指令
 
@@ -355,6 +355,74 @@ cd ConstructionWand-KOTS-1.21.1
 ## 改动记录
 
 > 按版本倒序，最新的在最前。每条是那一版「为什么这样做」与实测记录；某个版本号有多条时，后一条是它的后续修正。
+
+### 必定掉落：凶器条件不再否决修改器，补上农夫乐事的小刀掉落（2.16.86）
+
+2.16.85 把「条件里的 `entity` 不是 `this`」当成否决条件（原来的说法是：说的是凶器而不是死者，整条丢弃）。
+这条规则把农夫乐事的**小刀专属掉落**全挡住了 —— 它的 `data/farmersdelight/loot_modifiers/scavenging_*.json` 正是：
+
+```json
+{ "condition": "minecraft:entity_properties", "entity": "attacker",
+  "predicate": { "equipment": { "mainhand": { "items": "#farmersdelight:tools/knives" } } } }
+```
+
+而手杖永远不可能满足「手里拿着一把刀」。现在改成：**凶器 / 击杀者条件直接忽略**（不读它的 predicate，也不否定
+整条修改器），只有 `entity: this` 的条件才用来判断归属；`match_tool` / `damage_source_properties` /
+`enchantment_active` 这类顶层武器条件同样不再否决 —— 这一项本来就该给「死者能产出的一切」，而不是「法杖自己
+能打出的一切」。
+
+归属过滤还在：既没写生物类型 / tag、也没写战利品表的修改器仍然丢弃，所以草方块的稻草、蛋糕切片、箱子注入
+不会串到生物身上。
+
+同时把三路来源（原表、修改器、代码型掉落）合并后**按物品去重**（`SlayHandler.oneOfEach`）：蜘蛛的线、牛的皮革、
+鸡的羽毛本来就在原版表里，小刀修改器又加一遍，不去重会变成两份。
+
+按农夫乐事 1.21 的数据核对，杀这些生物时能多出：
+
+| 击杀 | 新增 |
+|---|---|
+| 猪 / 疣猪 | `farmersdelight:ham`、`farmersdelight:smoked_ham`（「是否着火」两条都读，所以都给） |
+| 僵尸 / 尸壳 / 僵尸村民 / 灾厄村民 | `farmersdelight:onion` |
+| 牛 / 哞菇 / 马 / 驴 / 骡 / 羊驼 / 鸡 / 兔 / 蜘蛛 / 潜影贝 | 与原表重复的物品，去重后仍是一份 |
+
+复测要点：秒杀核心 + 强化时运 + 选项页「必定掉落」设为“是”，左键杀一头猪，应额外收到 `farmersdelight:ham`；
+杀僵尸应额外收到洋葱；杀蜘蛛不应出现两份线。
+
+### 精准采集刷怪蛋：支持延迟注册的蛋（2.16.86）
+
+`SpawnEggItem.byId()` 只认构造时传入了实体类型的蛋。NeoForge 的 `DeferredSpawnEggItem`（Productive Bees 的
+蜜蜂蛋就是它）构造时传的是 supplier，`SpawnEggItem` 的构造器里 `if (defaultType != null) BY_ID.put(...)`
+直接跳过，于是 `byId` 永远返回 `null`，精准采集一只蜜蜂什么也拿不到。
+
+`SlayHandler.spawnEggOf` 改成三级查找：
+
+1. 先问实体自己 `getPickedResult(...)` —— 原版拾取方块用的是同一个钩子。Productive Bees 重写了它，会按
+   `bee_type` 生成带 `ENTITY_DATA` 的 configurable 蛋，放下去就是同一个品种；
+2. `SpawnEggItem.byId(type)`：原版与常规注册的 mod；
+3. `DeferredSpawnEggItem.deferredOnlyById(type)`：NeoForge 给延迟蛋维护的 map。
+
+复测要点：杀静态蜂（如染料蜂）应拿到 `productivebees:spawn_egg_dye_bee`；杀数据包蜂应拿到
+`spawn_egg_configurable_bee` 且 `ENTITY_DATA` 里是对应的 `type`。
+
+### 撤销改成只认 Ctrl+Z，右键撤销移除（2.16.86）
+
+原来撤销有两条路：按住功能键（默认左 Ctrl，按配置可再叠加潜行）**右键点上一次操作碰过的方块**，或者按撤销键。
+前者要瞄准、要靠近（3 格内），而且和开界面、时间核心连通模式共用同一个组合键，容易互相打架。现在只保留后者：
+
+- `KeybindHandler.undoKeyCombDown()`：功能键**单独**按下才算撤销组合，`Ctrl+Shift` 明确排除 —— `Ctrl+Shift`
+  是开界面的组合，玩家去开界面不该顺手把上一次操作撤掉；
+- 删除 `ItemWand` 里的右键撤销分支、`UndoHistory.undo(player, world, pos)` 与 `HistoryEntry.withinRange()`、
+  `KeybindHandler.isUndoClick()`；
+- 服务端 `UndoHistory.undo(player, world)` 同时拒绝 `shift` 按下的请求，防止按键状态过期时在界面后面撤销；
+- 界面打开时按 `Ctrl+Z` 不触发（`Minecraft.screen != null` 直接跳过）；
+- 绿色高亮框保留，改成只在「功能键且没潜行」时显示，含义变成「Ctrl+Z 会撤销这几格」。
+
+「按住功能键时服务端不执行这次右键」的拦截保留（改名 `configKeyDown`）：1.21 里客户端取消右键后服务端仍会收到
+use 包，这道拦截挡着「开界面时误触范围秒杀」和「时间核心连通模式重复执行」。所以现在 `Ctrl+右键` 什么都不做，
+不会变回放置。
+
+复测要点：`Ctrl+Z` 任意位置撤销；`Ctrl+Shift+Z` 无反应；`Ctrl+右键` 方块无反应；`Ctrl+Shift+右键` 正常开界面；
+JEI 里的手杖说明与中英文 tooltip 已同步成新按键。
 
 ### 必定掉落：战利品修改器加上过滤、实体 tag 与按服务器缓存（2.16.85）
 
